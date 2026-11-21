@@ -4,6 +4,7 @@ import Library from './components/Library';
 import NewVideo from './components/NewVideo';
 import Settings from './components/Settings';
 import VideoView from './components/VideoView';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export type View = {kind: 'video'; id: number} | {kind: 'new'} | {kind: 'settings'} | {kind: 'none'};
 
@@ -44,6 +45,7 @@ export default function App() {
         onImport={() => api.ImportExisting().then(refresh).catch(e => setListErr(errText(e)))}
       />
       <main className="main">
+        <ErrorBoundary key={view.kind === 'video' ? `v${view.id}` : view.kind}>
         {startErr && <div className="page"><div className="banner error">App không khởi động được: {startErr}</div></div>}
         {listErr && !startErr && <div className="banner error" style={{margin: 16}}>{listErr}</div>}
         {!startErr && view.kind === 'new' && <NewVideo onCreated={id => { refresh(); setView({kind: 'video', id}); }}/>}
@@ -60,6 +62,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -6,7 +6,7 @@ type Props = {d: VideoDetail; busy: boolean; act: (p: Promise<unknown>) => Promi
 export default function ChatPanel({d, busy, act}: Props) {
   const [text, setText] = useState('');
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({block: 'end'}), [d.chat.length]);
+  useEffect(() => { end.current?.scrollIntoView({block: 'end'}); }, [d.chat.length]);
 
   const send = () => {
     const msg = text.trim();
