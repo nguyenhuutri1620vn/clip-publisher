@@ -23,11 +23,16 @@ type Candidate struct {
 	Duration   float64
 }
 
-// Scan lists make-video-free/output/*.mp4 that have a <stem>.report.json, newest first.
+// Scan lists make-video-free/output/*.mp4 and output/<folder>/*.mp4 that have a
+// <stem>.report.json next to them, newest first.
 func Scan(videoRepo string) ([]Candidate, error) {
-	mp4s, err := filepath.Glob(filepath.Join(videoRepo, "output", "*.mp4"))
-	if err != nil {
-		return nil, err
+	var mp4s []string
+	for _, pattern := range []string{"*.mp4", filepath.Join("*", "*.mp4")} {
+		found, err := filepath.Glob(filepath.Join(videoRepo, "output", pattern))
+		if err != nil {
+			return nil, err
+		}
+		mp4s = append(mp4s, found...)
 	}
 	scripts, err := exampleHashes(videoRepo)
 	if err != nil {

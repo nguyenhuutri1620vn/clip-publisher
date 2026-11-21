@@ -62,3 +62,14 @@ func TestThumbCmd(t *testing.T) {
 		t.Fatalf("%+v", c)
 	}
 }
+
+func TestScanFindsVideosInSubfolders(t *testing.T) {
+	repo := t.TempDir()
+	write(t, filepath.Join(repo, "output", "khuc_thua_du", "khuc_thua_du.mp4"), "v")
+	write(t, filepath.Join(repo, "output", "khuc_thua_du", "khuc_thua_du.report.json"), `{"script_sha256":"x","total_duration":5}`)
+	write(t, filepath.Join(repo, "output", "voice", "a", "a.mp4"), "v") // no report → ignored
+	got, err := Scan(repo)
+	if err != nil || len(got) != 1 || got[0].MP4 != filepath.Join(repo, "output", "khuc_thua_du", "khuc_thua_du.mp4") {
+		t.Fatalf("%+v %v", got, err)
+	}
+}

@@ -541,3 +541,38 @@ func TestChatInvalidKeepsCurrent(t *testing.T) {
 		t.Fatalf("%+v", d.Chat)
 	}
 }
+
+// Moving imported files into subfolders relinks the existing entries instead of duplicating them;
+// imports whose file is gone are hidden.
+func TestImportRelinksMovedFiles(t *testing.T) {
+	e := setup(t)
+	out := filepath.Join(e.svc.d.Settings().VideoRepo, "output")
+	os.MkdirAll(out, 0o755)
+	for _, n := range []string{"a", "gone"} {
+		os.WriteFile(filepath.Join(out, n+".mp4"), []byte("v"), 0o644)
+		os.WriteFile(filepath.Join(out, n+".report.json"), []byte(`{"script_sha256":"none","total_duration":9}`), 0o644)
+	}
+	if n, _ := e.svc.Import(); n != 2 {
+		t.Fatalf("first import %d", n)
+	}
+	before, _ := e.svc.List()
+	os.MkdirAll(filepath.Join(out, "a"), 0o755)
+	os.Rename(filepath.Join(out, "a.mp4"), filepath.Join(out, "a", "a.mp4"))
+	os.Rename(filepath.Join(out, "a.report.json"), filepath.Join(out, "a", "a.report.json"))
+	os.Remove(filepath.Join(out, "gone.mp4"))
+	os.Remove(filepath.Join(out, "gone.report.json"))
+
+	if n, err := e.svc.Import(); err != nil || n != 0 {
+		t.Fatalf("second import added %d (%v)", n, err)
+	}
+	after, _ := e.svc.List()
+	if len(before) != 2 || len(after) != 1 || after[0].Title != "a" || after[0].Duration != 9 {
+		t.Fatalf("before %d after %+v", len(before), after)
+	}
+	v, _ := e.st.GetVideo(after[0].ID)
+	r, _ := e.st.LatestRender(v.ID, "render")
+	if v.SourcePath != filepath.Join(out, "a", "a.mp4") || r.MP4Path != v.SourcePath ||
+		r.ReportPath != filepath.Join(out, "a", "a.report.json") {
+		t.Fatalf("not relinked: %+v %+v", v, r)
+	}
+}

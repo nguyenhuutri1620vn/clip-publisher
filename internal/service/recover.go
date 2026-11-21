@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"clip-publisher/internal/library"
@@ -47,6 +48,10 @@ func (s *Service) Import() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	cands, err = s.relinkMoved(cands)
+	if err != nil {
+		return 0, err
+	}
 	added := 0
 	for _, c := range cands {
 		if _, err := s.d.Store.FindVideoBySource(c.MP4); err == nil {
@@ -87,6 +92,64 @@ func (s *Service) Import() (int, error) {
 		s.changed(v.ID)
 	}
 	return added, nil
+}
+
+// relinkMoved points imports whose file was moved (same file name, new folder) at the new
+// location and hides imports whose file is gone. It returns the candidates still to add.
+func (s *Service) relinkMoved(cands []library.Candidate) ([]library.Candidate, error) {
+	vs, err := s.d.Store.ListVideos(true)
+	if err != nil {
+		return nil, err
+	}
+	tracked := map[string]bool{}
+	for _, v := range vs {
+		if v.Origin == "import" {
+			tracked[v.SourcePath] = true
+		}
+	}
+	byName := map[string][]library.Candidate{}
+	for _, c := range cands {
+		if !tracked[c.MP4] {
+			byName[filepath.Base(c.MP4)] = append(byName[filepath.Base(c.MP4)], c)
+		}
+	}
+	used := map[string]bool{}
+	for _, v := range vs {
+		if v.Origin != "import" || v.SourcePath == "" {
+			continue
+		}
+		if _, err := os.Stat(v.SourcePath); err == nil {
+			continue
+		}
+		matches := byName[filepath.Base(v.SourcePath)]
+		if len(matches) == 1 && !used[matches[0].MP4] {
+			c := matches[0]
+			used[c.MP4] = true
+			v.SourcePath = c.MP4
+			v.Hidden = false
+			if err := s.d.Store.UpdateVideo(v); err != nil {
+				return nil, err
+			}
+			if r, err := s.d.Store.LatestRender(v.ID, "render"); err == nil {
+				if err := s.d.Store.SetRenderPaths(r.ID, c.MP4, c.Report, r.LogPath); err != nil {
+					return nil, err
+				}
+			}
+		} else if !v.Hidden {
+			v.Hidden = true // the file is gone: drop it from the library, keep the row
+			if err := s.d.Store.UpdateVideo(v); err != nil {
+				return nil, err
+			}
+		}
+		s.changed(v.ID)
+	}
+	rest := cands[:0:0]
+	for _, c := range cands {
+		if !used[c.MP4] {
+			rest = append(rest, c)
+		}
+	}
+	return rest, nil
 }
 
 // Hide removes a video from the library without touching files.
