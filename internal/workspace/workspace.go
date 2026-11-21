@@ -142,3 +142,8 @@ func Slugify(s string) string {
 	}
 	return out
 }
+
+// ThumbPath is the cached thumbnail of a video.
+func ThumbPath(root string, videoID int64) string {
+	return filepath.Join(root, "thumbs", fmt.Sprintf("%d.jpg", videoID))
+}
