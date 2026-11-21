@@ -27,13 +27,14 @@ Hợp đồng `script.json` (schema 2.2, layer catalog, giới hạn voice 0.3�
 
 ## Lệnh
 
-> Chưa scaffold. Cập nhật mục này khi tạo project Wails (`wails init -t react-ts`).
+Wails v2.9.2, Go 1.23, Node 23. Module path: `clip-publisher`.
 
 ```bash
-wails dev            # chạy app ở chế độ dev
-wails build          # build .app
-go test ./...        # test Go
-cd frontend && npm test
+wails dev                         # chạy app ở chế độ dev (hot reload frontend)
+wails build                       # build build/bin/clip-publisher.app
+go test ./...                     # test Go (dùng fake trong testdata/fakes, không gọi tool thật)
+go vet ./...
+cd frontend && npm run build      # kiểm tra TypeScript + bundle
 ```
 
 ## Kiểm thử
