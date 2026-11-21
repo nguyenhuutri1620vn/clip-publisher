@@ -5,11 +5,12 @@ type Props = {
   renders: RenderDTO[];
   slides: SlideDTO[];
   currentVersion: number;
+  poster: string;
   onSlide: (id: string | null) => void;
   seekRef: MutableRefObject<(sec: number) => void>;
 };
 
-export default function Player({renders, slides, currentVersion, onSlide, seekRef}: Props) {
+export default function Player({renders, slides, currentVersion, poster, onSlide, seekRef}: Props) {
   const [renderId, setRenderId] = useState<number | null>(renders[0]?.id ?? null);
   const [loop, setLoop] = useState(false);
   const [rate, setRate] = useState(1);
@@ -49,7 +50,7 @@ export default function Player({renders, slides, currentVersion, onSlide, seekRe
   return (
     <>
       <div className="frame">
-        <video ref={ref} key={current.url} src={current.url} controls loop={loop} onTimeUpdate={onTime}/>
+        <video ref={ref} key={current.url} src={current.url} poster={poster} preload="metadata" controls loop={loop} onTimeUpdate={onTime}/>
       </div>
       <div className="player-controls">
         {renders.length > 1 && (

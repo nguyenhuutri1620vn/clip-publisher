@@ -91,7 +91,7 @@ export default function VideoView({id, onGone}: {id: number; onGone: () => void}
           {v.status === 'GENERATING_SCRIPT' && <RenderProgress kind="claude" progress={progress} log={[]}/>}
           {v.status === 'RENDERING' && <RenderProgress kind="render" progress={progress} log={log}/>}
           {v.status !== 'RENDERING' && v.status !== 'GENERATING_SCRIPT' && (
-            <Player renders={doneRenders} slides={d.slides} currentVersion={d.currentVersion}
+            <Player renders={doneRenders} slides={d.slides} currentVersion={d.currentVersion} poster={v.thumbUrl}
                     onSlide={setCurrentSlide} seekRef={seekRef}/>
           )}
           {v.status === 'FAILED' && log.length > 0 && (

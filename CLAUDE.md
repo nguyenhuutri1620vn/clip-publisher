@@ -37,6 +37,27 @@ go vet ./...
 cd frontend && npm run build      # kiểm tra TypeScript + bundle
 ```
 
+## Cấu trúc
+
+```
+main.go, app.go          Wails bootstrap + bound methods (mỏng, chỉ gọi service); /media/* qua AssetServer.Middleware
+internal/workspace       đường dẫn ~/ClipPublisher, slug tiếng Việt, ghi file atomic, chat.jsonl
+internal/store           SQLite (modernc, không CGO): videos, versions, renders, jobs, settings
+internal/config          Settings mặc định/lưu, danh sách voice/nhạc
+internal/runner          exec không shell, stream từng dòng, huỷ cả process group, ChildEnv (PATH khi mở từ Finder)
+internal/scriptmodel     đọc/sửa script.json giữ thứ tự key, notes, cảnh báo, diff phiên bản
+internal/pipeline        lệnh validate/preview/make_video.py, đọc tiến độ từ dòng "$ ...", report, Doctor
+internal/scriptgen       prompt + gọi `claude -p`, vòng sửa lỗi validate (tối đa 3)
+internal/library         quét make-video-free/output để import, thumbnail bằng ffmpeg
+internal/jobs            hàng đợi tuần tự (render 1 cái một lúc)
+internal/service         điều phối trạng thái video; package duy nhất app.go gọi tới
+internal/media           phục vụ mp4/png/thumbnail cho webview (Range, chặn path traversal)
+internal/notify          osascript: thông báo macOS, chuyển vào Thùng rác
+frontend/src             React: Library, Settings, NewVideo, VideoView (Player, RenderProgress, ScriptReview, ChatPanel, VersionBar)
+```
+
+Sau khi đổi method của `App` hoặc struct trả về: `wails generate module` để cập nhật `frontend/wailsjs`.
+
 ## Kiểm thử
 
 - Không gọi VoiceStudio, render thật hay Claude thật trong test tự động: dùng script giả (fake `make_video.py`, fake `claude`) in ra stdout giống thật.
