@@ -356,35 +356,6 @@ func TestPreview(t *testing.T) {
 	}
 }
 
-func TestImportIdempotent(t *testing.T) {
-	e := setup(t)
-	out := filepath.Join(e.svc.d.Settings().VideoRepo, "output")
-	os.MkdirAll(out, 0o755)
-	os.WriteFile(filepath.Join(out, "x.mp4"), []byte("v"), 0o644)
-	os.WriteFile(filepath.Join(out, "x.report.json"), []byte(`{"script_sha256":"none","total_duration":9}`), 0o644)
-	n, err := e.svc.Import()
-	if err != nil || n != 1 {
-		t.Fatalf("%d %v", n, err)
-	}
-	n, _ = e.svc.Import()
-	if n != 0 {
-		t.Fatalf("second import %d", n)
-	}
-	list, _ := e.svc.List()
-	if len(list) != 1 || list[0].Editable || list[0].Status != "READY" || list[0].Duration != 9 {
-		t.Fatalf("%+v", list)
-	}
-	if err := e.svc.Delete(list[0].ID); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(out, "x.mp4")); err != nil {
-		t.Fatal("import delete touched the original file")
-	}
-	if list, _ := e.svc.List(); len(list) != 0 {
-		t.Fatal("import not hidden")
-	}
-}
-
 func TestDeleteAppVideoTrashesFolder(t *testing.T) {
 	e := setup(t)
 	id := e.create(t)
@@ -542,70 +513,81 @@ func TestChatInvalidKeepsCurrent(t *testing.T) {
 	}
 }
 
-// Moving imported files into subfolders relinks the existing entries instead of duplicating them;
-// imports whose file is gone are hidden.
-func TestImportRelinksMovedFiles(t *testing.T) {
-	e := setup(t)
-	out := filepath.Join(e.svc.d.Settings().VideoRepo, "output")
-	os.MkdirAll(out, 0o755)
-	for _, n := range []string{"a", "gone"} {
-		os.WriteFile(filepath.Join(out, n+".mp4"), []byte("v"), 0o644)
-		os.WriteFile(filepath.Join(out, n+".report.json"), []byte(`{"script_sha256":"none","total_duration":9}`), 0o644)
-	}
-	if n, _ := e.svc.Import(); n != 2 {
-		t.Fatalf("first import %d", n)
-	}
-	before, _ := e.svc.List()
-	os.MkdirAll(filepath.Join(out, "a"), 0o755)
-	os.Rename(filepath.Join(out, "a.mp4"), filepath.Join(out, "a", "a.mp4"))
-	os.Rename(filepath.Join(out, "a.report.json"), filepath.Join(out, "a", "a.report.json"))
-	os.Remove(filepath.Join(out, "gone.mp4"))
-	os.Remove(filepath.Join(out, "gone.report.json"))
+// publishFinal lays out final/<name>/ like make-video-free/tools/publish_final.py.
+func publishFinal(t *testing.T, e *env, name, script string) string {
+	t.Helper()
+	d := filepath.Join(e.svc.d.Settings().VideoRepo, "final", name)
+	os.MkdirAll(d, 0o755)
+	os.WriteFile(filepath.Join(d, name+".mp4"), []byte("v"), 0o644)
+	os.WriteFile(filepath.Join(d, name+".report.json"), []byte(`{"script_sha256":"x","total_duration":9}`), 0o644)
+	os.WriteFile(filepath.Join(d, "script.json"), []byte(script), 0o644)
+	os.WriteFile(filepath.Join(d, "final.json"), []byte(`{"name":"`+name+`","video":"`+name+`.mp4"}`), 0o644)
+	return d
+}
 
-	if n, err := e.svc.Import(); err != nil || n != 0 {
-		t.Fatalf("second import added %d (%v)", n, err)
+func TestImportFinalIdempotent(t *testing.T) {
+	e := setup(t)
+	d := publishFinal(t, e, "co_loa", validScript)
+	n, err := e.svc.Import()
+	if err != nil || n != 1 {
+		t.Fatalf("%d %v", n, err)
 	}
-	after, _ := e.svc.List()
-	if len(before) != 2 || len(after) != 1 || after[0].Title != "a" || after[0].Duration != 9 {
-		t.Fatalf("before %d after %+v", len(before), after)
+	if n, _ = e.svc.Import(); n != 0 {
+		t.Fatalf("second import %d", n)
 	}
-	v, _ := e.st.GetVideo(after[0].ID)
-	r, _ := e.st.LatestRender(v.ID, "render")
-	if v.SourcePath != filepath.Join(out, "a", "a.mp4") || r.MP4Path != v.SourcePath ||
-		r.ReportPath != filepath.Join(out, "a", "a.report.json") {
-		t.Fatalf("not relinked: %+v %+v", v, r)
+	list, _ := e.svc.List()
+	if len(list) != 1 || !list[0].Editable || list[0].Status != "READY" || list[0].Duration != 9 || list[0].Title != "Nỏ thần" {
+		t.Fatalf("%+v", list)
+	}
+	if err := e.svc.Delete(list[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(d, "co_loa.mp4")); err != nil {
+		t.Fatal("delete touched the final file")
+	}
+	if list, _ := e.svc.List(); len(list) != 0 {
+		t.Fatal("import not hidden")
 	}
 }
 
-// A hidden import (its file was deleted) must not be relinked to an unrelated file with the same name.
-func TestImportDoesNotRelinkHidden(t *testing.T) {
+// Imports from before final/ existed (output/, worktrees) are drafts: hidden. App videos stay.
+func TestImportHidesDraftsOutsideFinal(t *testing.T) {
 	e := setup(t)
-	out := filepath.Join(e.svc.d.Settings().VideoRepo, "output")
-	os.MkdirAll(out, 0o755)
-	os.WriteFile(filepath.Join(out, "x.mp4"), []byte("v"), 0o644)
-	os.WriteFile(filepath.Join(out, "x.report.json"), []byte(`{"script_sha256":"none","total_duration":9}`), 0o644)
+	app := e.create(t)
+	draft := store.Video{Slug: "draft", Title: "draft", Origin: "import", Status: store.StatusReady,
+		SourcePath: filepath.Join(e.svc.d.Settings().VideoRepo, "output", "draft.mp4")}
+	e.st.CreateVideo(&draft)
+	publishFinal(t, e, "co_loa", validScript)
+	if _, err := e.svc.Import(); err != nil {
+		t.Fatal(err)
+	}
+	d, _ := e.st.GetVideo(draft.ID)
+	a, _ := e.st.GetVideo(app)
+	if !d.Hidden || a.Hidden {
+		t.Fatalf("draft hidden=%v app hidden=%v", d.Hidden, a.Hidden)
+	}
+	if list, _ := e.svc.List(); len(list) != 2 {
+		t.Fatalf("list %d", len(list))
+	}
+}
+
+// Publishing the same name again (new script) becomes a new version on the next scan.
+func TestImportRefreshesScriptOnRepublish(t *testing.T) {
+	e := setup(t)
+	d := publishFinal(t, e, "co_loa", validScript)
 	e.svc.Import()
-	os.Remove(filepath.Join(out, "x.mp4"))
-	os.Remove(filepath.Join(out, "x.report.json"))
-	e.svc.Import() // hides it
-	other := filepath.Join(out, "other")
-	os.MkdirAll(other, 0o755)
-	os.WriteFile(filepath.Join(other, "x.mp4"), []byte("v2"), 0o644)
-	os.WriteFile(filepath.Join(other, "x.report.json"), []byte(`{"script_sha256":"none","total_duration":3}`), 0o644)
-	if n, _ := e.svc.Import(); n != 1 {
-		t.Fatalf("new file not added as its own entry: %d", n)
+	os.WriteFile(filepath.Join(d, "script.json"), []byte(strings.Replace(validScript, "Nỏ thần", "Nỏ thần v2", 1)), 0o644)
+	if _, err := e.svc.Import(); err != nil {
+		t.Fatal(err)
 	}
-	vs, _ := e.st.ListVideos(true)
-	hidden := 0
-	for _, v := range vs {
-		if v.Hidden {
-			hidden++
-			if v.SourcePath != filepath.Join(out, "x.mp4") {
-				t.Fatalf("hidden entry relinked: %+v", v)
-			}
-		}
+	list, _ := e.svc.List()
+	v, _ := e.st.GetVideo(list[0].ID)
+	vs, _ := e.st.ListVersions(v.ID)
+	if v.CurrentVersion != 2 || v.Title != "Nỏ thần v2" || vs[1].Author != "import" {
+		t.Fatalf("%+v %+v", v, vs)
 	}
-	if hidden != 1 || len(vs) != 2 {
-		t.Fatalf("hidden=%d total=%d", hidden, len(vs))
+	e.svc.Import()
+	if vs, _ = e.st.ListVersions(v.ID); len(vs) != 2 {
+		t.Fatalf("unchanged script made a new version: %d", len(vs))
 	}
 }

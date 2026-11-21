@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"os"
-	"path/filepath"
 	"time"
 
 	"clip-publisher/internal/library"
-	"clip-publisher/internal/pipeline"
 	"clip-publisher/internal/scriptmodel"
 	"clip-publisher/internal/store"
 	"clip-publisher/internal/workspace"
@@ -42,115 +40,126 @@ func (s *Service) Recover() error {
 	return nil
 }
 
-// Import adds make-video-free/output renders that are not in the library yet (PRD F2.2).
+// Import syncs the library with make-video-free/final (PRD F2.2): adds new finals, picks up the
+// new script of a re-published final, and hides imports that are not in final/ (drafts from
+// output/ or worktrees, or finals that were removed). Videos made in the app are never touched.
 func (s *Service) Import() (int, error) {
 	cands, err := library.Scan(s.d.Settings().VideoRepo)
 	if err != nil {
 		return 0, err
 	}
-	cands, err = s.relinkMoved(cands)
-	if err != nil {
+	inFinal := map[string]bool{}
+	for _, c := range cands {
+		inFinal[c.MP4] = true
+	}
+	if err := s.hideNonFinal(inFinal); err != nil {
 		return 0, err
 	}
 	added := 0
 	for _, c := range cands {
-		if _, err := s.d.Store.FindVideoBySource(c.MP4); err == nil {
+		v, err := s.d.Store.FindVideoBySource(c.MP4)
+		if err == nil {
+			if !v.Hidden { // a final the owner hid stays hidden
+				if err := s.refreshFromFinal(v, c); err != nil {
+					return added, err
+				}
+			}
 			continue
 		} else if !errors.Is(err, store.ErrNotFound) {
 			return added, err
 		}
-		slug, _, err := s.d.WS.NewVideoDir(c.Title)
-		if err != nil {
-			return added, err
-		}
-		v := store.Video{Slug: slug, Title: c.Title, Origin: "import", SourcePath: c.MP4, Status: store.StatusReady,
-			VoiceProfile: s.d.Settings().DefaultVoice, Editable: c.ScriptPath != ""}
-		if err := s.d.Store.CreateVideo(&v); err != nil {
-			return added, err
-		}
-		version := 0
-		if c.ScriptPath != "" {
-			b, err := os.ReadFile(c.ScriptPath)
-			if err == nil {
-				err = s.saveVersion(&v, b, scriptmodel.Notes{Slides: map[string]scriptmodel.SlideNote{}}, "import",
-					"Import từ "+c.ScriptPath, nil)
-			}
-			if err != nil {
-				v.Editable = false
-				_ = s.d.Store.UpdateVideo(v)
-			} else {
-				version = 1
-			}
-		}
-		fin := time.Now()
-		r := store.Render{VideoID: v.ID, Version: version, Kind: "render", MP4Path: c.MP4,
-			ReportPath: pipeline.ReportPath(c.MP4), State: "DONE", FinishedAt: &fin}
-		if err := s.d.Store.AddRender(&r); err != nil {
+		if err := s.addFinal(c); err != nil {
 			return added, err
 		}
 		added++
-		s.changed(v.ID)
 	}
 	return added, nil
 }
 
-// relinkMoved points imports whose file was moved (same file name, new folder) at the new
-// location and hides imports whose file is gone. It returns the candidates still to add.
-func (s *Service) relinkMoved(cands []library.Candidate) ([]library.Candidate, error) {
-	vs, err := s.d.Store.ListVideos(true)
+func (s *Service) hideNonFinal(inFinal map[string]bool) error {
+	vs, err := s.d.Store.ListVideos(false)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	tracked := map[string]bool{}
 	for _, v := range vs {
-		if v.Origin == "import" {
-			tracked[v.SourcePath] = true
-		}
-	}
-	byName := map[string][]library.Candidate{}
-	for _, c := range cands {
-		if !tracked[c.MP4] {
-			byName[filepath.Base(c.MP4)] = append(byName[filepath.Base(c.MP4)], c)
-		}
-	}
-	used := map[string]bool{}
-	for _, v := range vs {
-		// Hidden entries are gone on purpose; never revive them by file name.
-		if v.Origin != "import" || v.SourcePath == "" || v.Hidden {
+		if v.Origin != "import" || inFinal[v.SourcePath] {
 			continue
 		}
-		if _, err := os.Stat(v.SourcePath); err == nil {
-			continue
-		}
-		matches := byName[filepath.Base(v.SourcePath)]
-		if len(matches) == 1 && !used[matches[0].MP4] {
-			c := matches[0]
-			used[c.MP4] = true
-			v.SourcePath = c.MP4
-			v.Hidden = false
-			if err := s.d.Store.UpdateVideo(v); err != nil {
-				return nil, err
-			}
-			if r, err := s.d.Store.LatestRender(v.ID, "render"); err == nil {
-				if err := s.d.Store.SetRenderPaths(r.ID, c.MP4, c.Report, r.LogPath); err != nil {
-					return nil, err
-				}
-			}
-		} else if !v.Hidden {
-			v.Hidden = true // the file is gone: drop it from the library, keep the row
-			if err := s.d.Store.UpdateVideo(v); err != nil {
-				return nil, err
-			}
+		v.Hidden = true
+		if err := s.d.Store.UpdateVideo(v); err != nil {
+			return err
 		}
 		s.changed(v.ID)
 	}
-	rest := cands[:0:0]
-	for _, c := range cands {
-		if !used[c.MP4] {
-			rest = append(rest, c)
+	return nil
+}
+
+func (s *Service) addFinal(c library.Candidate) error {
+	slug, _, err := s.d.WS.NewVideoDir(c.Title)
+	if err != nil {
+		return err
+	}
+	v := store.Video{Slug: slug, Title: c.Title, Origin: "import", SourcePath: c.MP4, Status: store.StatusReady,
+		VoiceProfile: s.d.Settings().DefaultVoice, Editable: c.ScriptPath != ""}
+	if err := s.d.Store.CreateVideo(&v); err != nil {
+		return err
+	}
+	version := 0
+	if c.ScriptPath != "" {
+		b, err := os.ReadFile(c.ScriptPath)
+		if err == nil {
+			err = s.saveVersion(&v, b, scriptmodel.Notes{Slides: map[string]scriptmodel.SlideNote{}}, "import",
+				"Import từ final", nil)
+		}
+		if err != nil {
+			v.Editable = false
+			_ = s.d.Store.UpdateVideo(v)
+		} else {
+			version = 1
 		}
 	}
-	return rest, nil
+	if err := s.addFinalRender(v.ID, version, c); err != nil {
+		return err
+	}
+	s.changed(v.ID)
+	return nil
+}
+
+func (s *Service) addFinalRender(videoID int64, version int, c library.Candidate) error {
+	fin := time.Now()
+	r := store.Render{VideoID: videoID, Version: version, Kind: "render", MP4Path: c.MP4,
+		ReportPath: c.Report, State: "DONE", FinishedAt: &fin}
+	return s.d.Store.AddRender(&r)
+}
+
+// refreshFromFinal stores the final's script as a new version when it differs from the current one
+// (the video was re-published).
+func (s *Service) refreshFromFinal(v store.Video, c library.Candidate) error {
+	if c.ScriptPath == "" || !v.Editable {
+		return nil
+	}
+	unlock := s.lockVideo(v.ID)
+	defer unlock()
+	v, err := s.d.Store.GetVideo(v.ID)
+	if err != nil || isBusy(v) {
+		return err
+	}
+	b, err := os.ReadFile(c.ScriptPath)
+	if err != nil {
+		return nil
+	}
+	if cur, _, _, err := s.current(v); err == nil && string(cur) == string(b) {
+		return nil
+	}
+	notes := scriptmodel.Notes{Slides: map[string]scriptmodel.SlideNote{}}
+	if err := s.saveVersion(&v, b, notes, "import", "Cập nhật từ final", nil); err != nil {
+		return err
+	}
+	if err := s.addFinalRender(v.ID, v.CurrentVersion, c); err != nil {
+		return err
+	}
+	s.changed(v.ID)
+	return nil
 }
 
 // Hide removes a video from the library without touching files.

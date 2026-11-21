@@ -48,7 +48,7 @@ internal/runner          exec không shell, stream từng dòng, huỷ cả proc
 internal/scriptmodel     đọc/sửa script.json giữ thứ tự key, notes, cảnh báo, diff phiên bản
 internal/pipeline        lệnh validate/preview/make_video.py, đọc tiến độ từ dòng "$ ...", report, Doctor
 internal/scriptgen       prompt + gọi `claude -p`, vòng sửa lỗi validate (tối đa 3)
-internal/library         quét make-video-free/output để import, thumbnail bằng ffmpeg
+internal/library         đọc make-video-free/final/<tên>/ (do tools/publish_final.py tạo), thumbnail bằng ffmpeg
 internal/jobs            hàng đợi tuần tự (render 1 cái một lúc)
 internal/service         điều phối trạng thái video; package duy nhất app.go gọi tới
 internal/media           phục vụ mp4/png/thumbnail cho webview (Range, chặn path traversal)

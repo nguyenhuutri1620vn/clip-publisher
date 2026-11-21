@@ -75,7 +75,7 @@ Hiện tại không có chỗ nào để quản lý: video nằm rải rác tron
 
 ### F2. Thư viện
 - F2.1 Danh sách video: thumbnail (slide đầu), tiêu đề (`title` trong script), trạng thái, thời lượng, ngày cập nhật. Mới nhất ở trên. Tìm theo tiêu đề.
-- F2.2 **Import** video có sẵn: quét `make-video-free/output/*.mp4` có `<tên>.report.json` đi kèm. Ghép với script nguồn bằng `script_sha256` trong report so với các `examples/*/script.json`; tìm được thì video import **sửa được** (app copy script vào workspace làm v1), không thì chỉ **xem**. File gốc không bị di chuyển hay sửa. Có nút "Quét lại".
+- F2.2 *(Đổi 2026-11-21: thư viện chỉ đọc `make-video-free/final/<tên>/` do `tools/publish_final.py` tạo — mỗi video một thư mục có mp4, report, script.json, final.json; `output/` và worktree là nháp, không hiện. Xuất bản lại cùng tên → script thành phiên bản mới.)* Bản gốc: **Import** video có sẵn: quét `make-video-free/output/*.mp4` có `<tên>.report.json` đi kèm. Ghép với script nguồn bằng `script_sha256` trong report so với các `examples/*/script.json`; tìm được thì video import **sửa được** (app copy script vào workspace làm v1), không thì chỉ **xem**. File gốc không bị di chuyển hay sửa. Có nút "Quét lại".
 - F2.3 Ẩn / xoá khỏi thư viện: video tạo trong app thì xoá thư mục (có xác nhận, chuyển vào Thùng rác macOS); video import thì chỉ ẩn.
 - F2.4 Mở thư mục video trong Finder.
 

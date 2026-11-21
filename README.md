@@ -24,7 +24,7 @@ wails dev      # chế độ dev; cũng mở được ở http://localhost:34115
 wails build    # tạo build/bin/clip-publisher.app
 ```
 
-Dữ liệu nằm ở `~/ClipPublisher/`: `app.db` (SQLite) và `videos/<tên>/` (input.md, script.vN.json, notes.vN.json, chat.jsonl, voice/, renders/). App không sửa gì trong 2 repo kia; video cũ trong `make-video-free/output/` được import để xem (và sửa được nếu script gốc nằm trong `examples/`).
+Dữ liệu nằm ở `~/ClipPublisher/`: `app.db` (SQLite) và `videos/<tên>/` (input.md, script.vN.json, notes.vN.json, chat.jsonl, voice/, renders/). App không sửa gì trong 2 repo kia. Thư viện chỉ hiện video đã chốt trong `make-video-free/final/<tên>/`; xuất bản bằng `make-video-free/tools/publish_final.py --video … --script …`. `output/` và các worktree là nháp, không hiện.
 
 ## Phát triển
 

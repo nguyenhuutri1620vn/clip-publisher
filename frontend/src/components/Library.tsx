@@ -50,12 +50,12 @@ export default function Library({videos, selected, onSelect, onNew, onSettings, 
         ))}
         {videos.length === 0 && (
           <p className="dim small" style={{padding: '8px 6px'}}>
-            Chưa có video. Bấm “+”, hoặc “Quét video cũ” để lấy các video trong make-video-free/output.
+            Chưa có video. Bấm “+” để tạo, hoặc xuất bản video đã ưng vào make-video-free/final rồi bấm “Quét final”.
           </p>
         )}
       </div>
       <div className="sidebar-foot">
-        <button onClick={onImport} title="Thêm các video mới trong make-video-free/output">Quét video cũ</button>
+        <button onClick={onImport} title="Đồng bộ với make-video-free/final">Quét final</button>
         <button onClick={onSettings} className={settingsOpen ? 'primary' : ''}>Cài đặt</button>
       </div>
     </aside>

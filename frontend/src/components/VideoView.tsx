@@ -100,7 +100,7 @@ export default function VideoView({id, onGone}: {id: number; onGone: () => void}
               <div className="log">{log.join('\n')}</div>
             </details>
           )}
-          {!v.editable && <div className="banner info">Video import không có script gốc trong make-video-free/examples, nên chỉ xem được.</div>}
+          {!v.editable && <div className="banner info">Video này không có script.json trong final/, nên chỉ xem được.</div>}
         </section>
 
         <section className="side">
