@@ -56,7 +56,7 @@ export default function App() {
         {!startErr && view.kind === 'none' && (
           <div className="empty">
             <div>
-              <h2 className="serif">Chọn một video, hoặc tạo video mới</h2>
+              <h2>Chọn một video, hoặc tạo video mới</h2>
               <p>Dán kịch bản theo từng cảnh, Claude sẽ dựng script và app chạy voice + render cho bạn.</p>
               <button className="primary" onClick={() => setView({kind: 'new'})}>Tạo video mới</button>
             </div>

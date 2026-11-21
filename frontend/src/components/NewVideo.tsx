@@ -33,7 +33,7 @@ export default function NewVideo({onCreated}: {onCreated: (id: number) => void})
 
   return (
     <div className="page">
-      <h2>Video mới</h2>
+      <div className="page-head"><h2>Video mới</h2></div>
       <p className="dim">
         Dán kịch bản theo từng cảnh: Thời gian, Hình ảnh, Chữ trên hình, Lời đọc. Một ý tưởng ngắn cũng được.
         Claude sẽ viết script, bạn duyệt rồi mới render.

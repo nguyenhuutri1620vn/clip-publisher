@@ -7,8 +7,8 @@ const fields: {key: keyof S; label: string; hint?: string; readOnly?: boolean}[]
   {key: 'video_python', label: 'Python của make-video-free', hint: 'Thường là <thư mục>/.venv/bin/python'},
   {key: 'voice_repo', label: 'Thư mục make-voice-free'},
   {key: 'voice_bin', label: 'Lệnh make-voice-free', hint: 'Thường là <thư mục>/.venv/bin/make-voice-free'},
-  {key: 'claude_bin', label: 'Lệnh Claude Code (claude)'},
-  {key: 'workspace', label: 'Thư mục làm việc của app', readOnly: true, hint: 'Cố định trong bản này'},
+  {key: 'claude_bin', label: 'Lệnh Claude Code'},
+  {key: 'workspace', label: 'Thư mục làm việc', readOnly: true, hint: 'Cố định trong bản này'},
 ];
 
 export default function Settings() {
@@ -30,7 +30,7 @@ export default function Settings() {
 
   const set = (k: keyof S, v: string) => { setS(config.Settings.createFrom({...s, [k]: v})); setMsg(''); };
   const save = () => api.SaveSettings(s)
-    .then(() => { setMsg('Đã lưu cài đặt'); setErr(''); loadLists(); })
+    .then(() => { setMsg('Đã lưu'); setErr(''); loadLists(); })
     .catch(e => setErr(errText(e)));
   const doctor = () => {
     setChecking(true);
@@ -39,40 +39,48 @@ export default function Settings() {
 
   return (
     <div className="page">
-      <h2>Cài đặt</h2>
-      <p className="dim">App gọi 2 project có sẵn trên máy và Claude Code. Đường dẫn sai thì bấm “Kiểm tra” sẽ thấy ngay.</p>
+      <div className="page-head"><h2>Cài đặt</h2></div>
       <div className="settings">
-        {fields.map(f => (
-          <label key={f.key} className="field">
-            {f.label}
-            <input type="text" value={s[f.key] as string} readOnly={f.readOnly} disabled={f.readOnly}
-                   onChange={e => set(f.key, e.target.value)}/>
-            {f.hint && <span className="small">{f.hint}</span>}
-          </label>
-        ))}
-        <div className="field-row">
-          <label className="field">
-            Giọng đọc mặc định
+        <p className="dim" style={{margin: 0}}>
+          App gọi 2 project có sẵn trên máy và Claude Code. Đường dẫn sai thì bấm “Kiểm tra công cụ” sẽ thấy ngay.
+        </p>
+
+        <div className="group">
+          {fields.map(f => (
+            <label key={f.key} className="group-row">
+              <span>{f.label}</span>
+              <input type="text" value={s[f.key] as string} readOnly={f.readOnly} disabled={f.readOnly}
+                     onChange={e => set(f.key, e.target.value)}/>
+              {f.hint && <span className="hint small dim">{f.hint}</span>}
+            </label>
+          ))}
+        </div>
+
+        <div className="group">
+          <label className="group-row">
+            <span>Giọng đọc mặc định</span>
             <select value={s.default_voice} onChange={e => set('default_voice', e.target.value)}>
               {voices.map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </label>
-          <label className="field">
-            Nhạc nền mặc định
+          <label className="group-row">
+            <span>Nhạc nền mặc định</span>
             <select value={s.default_music} onChange={e => set('default_music', e.target.value)}>
               <option value="">Không có nhạc</option>
               {music.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </label>
         </div>
+
         <div className="toolbar">
-          <button className="primary" onClick={save}>Lưu cài đặt</button>
           <button onClick={doctor} disabled={checking}>{checking ? 'Đang kiểm tra…' : 'Kiểm tra công cụ'}</button>
+          <span className="grow"/>
           {msg && <span className="ok small">{msg}</span>}
+          <button className="primary" onClick={save}>Lưu</button>
         </div>
         {err && <div className="banner error">{err}</div>}
         {checks && (
-          <ul className="checks">
+          <ul className="checks group">
             {checks.map(c => (
               <li key={c.name}>
                 <span className={c.ok ? 'ok' : 'bad'}>{c.ok ? '✓' : '✗'}</span>

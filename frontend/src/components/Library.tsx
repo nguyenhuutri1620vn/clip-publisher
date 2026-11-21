@@ -26,9 +26,11 @@ export default function Library({videos, selected, onSelect, onNew, onSettings, 
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
-        <h1>Clip Publisher</h1>
-        <button className="primary" onClick={onNew}>+ Video mới</button>
-        <input type="text" placeholder="Tìm theo tiêu đề" value={q} onChange={e => setQ(e.target.value)}/>
+        <h1>Thư viện</h1>
+        <button className="icon-btn" onClick={onNew} title="Video mới" aria-label="Video mới">+</button>
+      </div>
+      <div className="sidebar-search">
+        <input type="text" placeholder="Tìm kiếm" value={q} onChange={e => setQ(e.target.value)}/>
       </div>
       <div className="list">
         {shown.map(v => (
@@ -48,7 +50,7 @@ export default function Library({videos, selected, onSelect, onNew, onSettings, 
         ))}
         {videos.length === 0 && (
           <p className="dim small" style={{padding: '8px 6px'}}>
-            Chưa có video. Bấm “+ Video mới”, hoặc “Quét video cũ” để lấy các video trong make-video-free/output.
+            Chưa có video. Bấm “+”, hoặc “Quét video cũ” để lấy các video trong make-video-free/output.
           </p>
         )}
       </div>

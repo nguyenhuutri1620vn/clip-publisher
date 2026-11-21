@@ -25,7 +25,7 @@ export default function RenderProgress({kind, progress, log}: {kind: 'claude' | 
   if (kind === 'claude') {
     return (
       <div className="progress-card">
-        <div className="serif" style={{fontSize: 18}}>Claude đang viết script…</div>
+        <div className="progress-title">Claude đang viết script…</div>
         <div className="bigtime">{fmtDuration(elapsed) || '0:00'}</div>
         <p className="dim small" style={{margin: 0}}>
           Thường mất 1–3 phút. Script sai cấu trúc sẽ được gửi lại cho Claude sửa, tối đa 3 lần.
@@ -41,7 +41,7 @@ export default function RenderProgress({kind, progress, log}: {kind: 'claude' | 
   return (
     <div className="progress-card">
       {queued ? (
-        <div className="serif" style={{fontSize: 18}}>Đang chờ video khác render xong (vị trí #{progress!.queuePos})</div>
+        <div className="progress-title">Đang chờ video khác render xong (vị trí #{progress!.queuePos})</div>
       ) : (
         <>
           <div style={{display: 'flex', alignItems: 'baseline', gap: 14}}>

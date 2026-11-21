@@ -6,6 +6,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
 //go:embed all:frontend/dist
@@ -25,10 +26,22 @@ func main() {
 			// is never consulted, so /media/* must be intercepted before that.
 			Middleware: app.mediaMiddleware,
 		},
-		BackgroundColour: &options.RGBA{R: 22, G: 20, B: 18, A: 1},
-		OnStartup:        app.startup,
-		OnBeforeClose:    app.beforeClose,
-		OnShutdown:       app.shutdown,
+		// Transparent window + translucent webview = native sidebar vibrancy; the CSS paints the
+		// content area opaque.
+		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
+		Mac: &mac.Options{
+			TitleBar:             mac.TitleBarHiddenInset(),
+			Appearance:           mac.DefaultAppearance, // follow System Settings light/dark
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  true,
+			About: &mac.AboutInfo{
+				Title:   "Clip Publisher",
+				Message: "Quản lý và tạo short video lịch sử.",
+			},
+		},
+		OnStartup:     app.startup,
+		OnBeforeClose: app.beforeClose,
+		OnShutdown:    app.shutdown,
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: "clip-publisher-6fe7430",
 		},

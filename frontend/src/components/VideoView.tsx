@@ -105,13 +105,13 @@ export default function VideoView({id, onGone}: {id: number; onGone: () => void}
 
         <section className="side">
           {v.editable && (
-            <nav className="tabs">
+            <nav className="tabs"><div className="tabs-inner">
               <button className={tab === 'script' ? 'on' : ''} onClick={() => setTab('script')}>Script</button>
               <button className={tab === 'chat' ? 'on' : ''} onClick={() => setTab('chat')}>Chat với Claude</button>
               <button className={tab === 'versions' ? 'on' : ''} onClick={() => setTab('versions')}>
                 Phiên bản ({d.versions.length})
               </button>
-            </nav>
+            </div></nav>
           )}
           {v.editable && tab === 'script' && (
             <ScriptReview d={d} busy={busy} currentSlide={currentSlide} onSeek={s => seekRef.current(s)}

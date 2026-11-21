@@ -52,7 +52,7 @@ export default function ScriptReview({d, busy, currentSlide, onSeek, act}: Props
 
       {d.sources.length > 0 && (
         <>
-          <h3 className="serif" style={{margin: '22px 0 0'}}>Nguồn</h3>
+          <h3 className="section-title">Nguồn</h3>
           <ol className="sources selectable">
             {d.sources.map((src, i) => <li key={i}><Marked text={src.text}/></li>)}
           </ol>
