@@ -10,10 +10,10 @@ type Props = {
   act: (p: Promise<unknown>) => Promise<unknown>;
 };
 
-/** Highlights "[CẦN KIỂM TRA…]" markers so unverified facts are never missed. */
+/** Highlights "[CẦN KIỂM TRA…]" / "[CẦN BỔ SUNG…]" markers so unverified facts are never missed. */
 export function Marked({text}: {text: string}) {
-  const parts = text.split(/(\[CẦN KIỂM TRA[^\]]*\])/g);
-  return <>{parts.map((p, i) => p.startsWith('[CẦN KIỂM TRA')
+  const parts = text.split(/(\[\s*cần (?:kiểm tra|bổ sung)[^\]]*\])/giu);
+  return <>{parts.map((p, i) => /^\[\s*cần (kiểm tra|bổ sung)/iu.test(p)
     ? <span key={i} className="check">{p}</span>
     : <Fragment key={i}>{p}</Fragment>)}</>;
 }

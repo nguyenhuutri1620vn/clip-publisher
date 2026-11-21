@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -195,7 +196,10 @@ func (s *Script) WithSlideRaw(id string, raw []byte) ([]byte, error) {
 	return s.render(slides)
 }
 
-// NeedsCheck reports whether text carries an unverified-fact marker.
+// NeedsCheck reports whether text carries an unverified-fact marker such as
+// "[CẦN KIỂM TRA: …]" or "[CẦN BỔ SUNG NGUỒN: …]" (any case).
 func NeedsCheck(text string) bool {
-	return strings.Contains(text, "[CẦN KIỂM TRA")
+	return checkMarker.MatchString(text)
 }
+
+var checkMarker = regexp.MustCompile(`(?i)\[\s*cần (kiểm tra|bổ sung)`)

@@ -110,7 +110,8 @@ func TestWithSlideRaw(t *testing.T) {
 }
 
 func TestNeedsCheck(t *testing.T) {
-	if !NeedsCheck("x [CẦN KIỂM TRA: năm]") || NeedsCheck("đã kiểm tra") {
+	if !NeedsCheck("x [CẦN KIỂM TRA: năm]") || NeedsCheck("đã kiểm tra") ||
+		!NeedsCheck("[CẦN BỔ SUNG NGUỒN: báo cáo khảo cổ]") || !NeedsCheck("Đại Việt sử ký [cần kiểm tra số trang]") {
 		t.Fatal("NeedsCheck")
 	}
 }
