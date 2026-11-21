@@ -115,7 +115,8 @@ func (s *Service) relinkMoved(cands []library.Candidate) ([]library.Candidate, e
 	}
 	used := map[string]bool{}
 	for _, v := range vs {
-		if v.Origin != "import" || v.SourcePath == "" {
+		// Hidden entries are gone on purpose; never revive them by file name.
+		if v.Origin != "import" || v.SourcePath == "" || v.Hidden {
 			continue
 		}
 		if _, err := os.Stat(v.SourcePath); err == nil {

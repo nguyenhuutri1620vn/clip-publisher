@@ -23,20 +23,36 @@ type Candidate struct {
 	Duration   float64
 }
 
-// Scan lists make-video-free/output/*.mp4 and output/<folder>/*.mp4 that have a
-// <stem>.report.json next to them, newest first.
+// roots are make-video-free itself plus its Claude Code worktrees (.claude/worktrees/*), where
+// the owner usually renders new videos.
+func roots(videoRepo string) []string {
+	wts, _ := filepath.Glob(filepath.Join(videoRepo, ".claude", "worktrees", "*"))
+	sort.Strings(wts)
+	return append([]string{videoRepo}, wts...)
+}
+
+// Scan lists <root>/output/*.mp4 and <root>/output/<folder>/*.mp4 that have a
+// <stem>.report.json next to them, for every root, newest first.
 func Scan(videoRepo string) ([]Candidate, error) {
 	var mp4s []string
-	for _, pattern := range []string{"*.mp4", filepath.Join("*", "*.mp4")} {
-		found, err := filepath.Glob(filepath.Join(videoRepo, "output", pattern))
+	scripts := map[string]string{}
+	for _, root := range roots(videoRepo) {
+		for _, pattern := range []string{"*.mp4", filepath.Join("*", "*.mp4")} {
+			found, err := filepath.Glob(filepath.Join(root, "output", pattern))
+			if err != nil {
+				return nil, err
+			}
+			mp4s = append(mp4s, found...)
+		}
+		hashes, err := exampleHashes(root)
 		if err != nil {
 			return nil, err
 		}
-		mp4s = append(mp4s, found...)
-	}
-	scripts, err := exampleHashes(videoRepo)
-	if err != nil {
-		return nil, err
+		for h, p := range hashes {
+			if _, seen := scripts[h]; !seen { // the main repo wins over worktrees
+				scripts[h] = p
+			}
+		}
 	}
 	type withTime struct {
 		c   Candidate

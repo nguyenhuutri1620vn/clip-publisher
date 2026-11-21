@@ -73,3 +73,29 @@ func TestScanFindsVideosInSubfolders(t *testing.T) {
 		t.Fatalf("%+v %v", got, err)
 	}
 }
+
+func TestScanIncludesWorktrees(t *testing.T) {
+	repo := t.TempDir()
+	wt := filepath.Join(repo, ".claude", "worktrees", "co-loa-arrow-script-2f38f6")
+	script := `{"title":"Nỏ thần Cổ Loa","slides":[]}`
+	write(t, filepath.Join(wt, "examples", "co_loa", "script.json"), script)
+	sum := sha256.Sum256([]byte(script))
+	write(t, filepath.Join(wt, "output", "co_loa.mp4"), "v")
+	write(t, filepath.Join(wt, "output", "co_loa.report.json"),
+		fmt.Sprintf(`{"script_sha256":"%s","total_duration":60}`, hex.EncodeToString(sum[:])))
+	write(t, filepath.Join(wt, "output", "trong_dong", "trong_dong.mp4"), "v")
+	write(t, filepath.Join(wt, "output", "trong_dong", "trong_dong.report.json"), `{"script_sha256":"x","total_duration":5}`)
+	got, err := Scan(repo)
+	if err != nil || len(got) != 2 {
+		t.Fatalf("%+v %v", got, err)
+	}
+	var co Candidate
+	for _, c := range got {
+		if filepath.Base(c.MP4) == "co_loa.mp4" {
+			co = c
+		}
+	}
+	if co.Title != "Nỏ thần Cổ Loa" || co.ScriptPath != filepath.Join(wt, "examples", "co_loa", "script.json") {
+		t.Fatalf("co_loa: %+v", co)
+	}
+}

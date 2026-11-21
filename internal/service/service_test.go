@@ -576,3 +576,36 @@ func TestImportRelinksMovedFiles(t *testing.T) {
 		t.Fatalf("not relinked: %+v %+v", v, r)
 	}
 }
+
+// A hidden import (its file was deleted) must not be relinked to an unrelated file with the same name.
+func TestImportDoesNotRelinkHidden(t *testing.T) {
+	e := setup(t)
+	out := filepath.Join(e.svc.d.Settings().VideoRepo, "output")
+	os.MkdirAll(out, 0o755)
+	os.WriteFile(filepath.Join(out, "x.mp4"), []byte("v"), 0o644)
+	os.WriteFile(filepath.Join(out, "x.report.json"), []byte(`{"script_sha256":"none","total_duration":9}`), 0o644)
+	e.svc.Import()
+	os.Remove(filepath.Join(out, "x.mp4"))
+	os.Remove(filepath.Join(out, "x.report.json"))
+	e.svc.Import() // hides it
+	other := filepath.Join(out, "other")
+	os.MkdirAll(other, 0o755)
+	os.WriteFile(filepath.Join(other, "x.mp4"), []byte("v2"), 0o644)
+	os.WriteFile(filepath.Join(other, "x.report.json"), []byte(`{"script_sha256":"none","total_duration":3}`), 0o644)
+	if n, _ := e.svc.Import(); n != 1 {
+		t.Fatalf("new file not added as its own entry: %d", n)
+	}
+	vs, _ := e.st.ListVideos(true)
+	hidden := 0
+	for _, v := range vs {
+		if v.Hidden {
+			hidden++
+			if v.SourcePath != filepath.Join(out, "x.mp4") {
+				t.Fatalf("hidden entry relinked: %+v", v)
+			}
+		}
+	}
+	if hidden != 1 || len(vs) != 2 {
+		t.Fatalf("hidden=%d total=%d", hidden, len(vs))
+	}
+}
