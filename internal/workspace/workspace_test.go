@@ -68,13 +68,13 @@ func TestNewCreatesLayout(t *testing.T) {
 func TestPaths(t *testing.T) {
 	d := "/w/videos/x"
 	checks := map[string]string{
-		ScriptPath(d, 2):     "/w/videos/x/script.v2.json",
-		NotesPath(d, 2):      "/w/videos/x/notes.v2.json",
-		RenderMP4Path(d, 3):  "/w/videos/x/renders/v3.mp4",
-		RenderLogPath(d, 3):  "/w/videos/x/renders/render.v3.log",
-		PreviewMP4Path(d, 1): "/w/videos/x/renders/preview.v1/preview.mp4",
-		VoiceDir(d):          "/w/videos/x/voice",
-		InputPath(d):         "/w/videos/x/input.md",
+		ScriptPath(d, 2):       "/w/videos/x/script.v2.json",
+		NotesPath(d, 2):        "/w/videos/x/notes.v2.json",
+		RenderMP4Path(d, 3, 7): "/w/videos/x/renders/v3-r7.mp4",
+		RenderLogPath(d, 3, 7): "/w/videos/x/renders/render.v3-r7.log",
+		PreviewMP4Path(d, 1):   "/w/videos/x/renders/preview.v1/preview.mp4",
+		VoiceDir(d):            "/w/videos/x/voice",
+		InputPath(d):           "/w/videos/x/input.md",
 	}
 	for got, want := range checks {
 		if got != want {

@@ -16,23 +16,39 @@ type Output struct {
 	Summary string            `json:"summary"`
 }
 
-// ParseEnvelope unwraps `claude -p --output-format json` output.
+// ParseEnvelope unwraps `claude -p --output-format json` output. Output also carries stderr
+// (Node warnings), so the first JSON object that decodes as an envelope wins and anything around
+// it is ignored.
 func ParseEnvelope(stdout []byte) (string, error) {
-	var env struct {
-		IsError bool   `json:"is_error"`
-		Result  string `json:"result"`
+	type envelope struct {
+		Type    string  `json:"type"`
+		IsError bool    `json:"is_error"`
+		Result  *string `json:"result"`
 	}
-	s := strings.TrimSpace(string(stdout))
-	if i := strings.Index(s, "{"); i > 0 {
-		s = s[i:] // tolerate warnings printed before the JSON
+	s := string(stdout)
+	var lastErr error
+	for i := strings.IndexByte(s, '{'); i >= 0; {
+		var env envelope
+		err := json.NewDecoder(strings.NewReader(s[i:])).Decode(&env)
+		if err == nil && env.Result != nil {
+			if env.IsError {
+				return "", fmt.Errorf("Claude báo lỗi: %s", *env.Result)
+			}
+			return *env.Result, nil
+		}
+		if err != nil {
+			lastErr = err
+		}
+		next := strings.IndexByte(s[i+1:], '{')
+		if next < 0 {
+			break
+		}
+		i += next + 1
 	}
-	if err := json.Unmarshal([]byte(s), &env); err != nil {
-		return "", fmt.Errorf("Claude trả về dữ liệu không đọc được: %w", err)
+	if lastErr == nil {
+		lastErr = errors.New("không có JSON")
 	}
-	if env.IsError {
-		return "", fmt.Errorf("Claude báo lỗi: %s", env.Result)
-	}
-	return env.Result, nil
+	return "", fmt.Errorf("Claude trả về dữ liệu không đọc được: %w", lastErr)
 }
 
 // ExtractOutput finds the JSON object in Claude's reply (plain, fenced, or surrounded by prose).

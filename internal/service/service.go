@@ -45,6 +45,9 @@ type Service struct {
 	progress map[int64]*ProgressDTO
 	logTail  map[int64][]string
 	warnings map[string][]string // validator warnings by script path
+	vlocks   map[int64]*sync.Mutex
+	// ownedProcess reports whether a process group left by a crashed run is ours to kill.
+	ownedProcess func(pgid int) bool
 }
 
 const (
@@ -67,7 +70,25 @@ func New(d Deps) *Service {
 	return &Service{
 		d: d, renderQ: jobs.NewQueue(), claudeQ: jobs.NewQueue(),
 		progress: map[int64]*ProgressDTO{}, logTail: map[int64][]string{}, warnings: map[string][]string{},
+		vlocks: map[int64]*sync.Mutex{}, ownedProcess: isPipelineGroup,
 	}
+}
+
+// lockVideo serialises state changes of one video (check-then-act across concurrent UI calls).
+func (s *Service) lockVideo(id int64) func() {
+	s.mu.Lock()
+	m, ok := s.vlocks[id]
+	if !ok {
+		m = &sync.Mutex{}
+		s.vlocks[id] = m
+	}
+	s.mu.Unlock()
+	m.Lock()
+	return m.Unlock
+}
+
+func (s *Service) recordPID(jobID int64) func(int) {
+	return func(pgid int) { _ = s.d.Store.SetJobPID(jobID, pgid) }
 }
 
 // WaitIdle blocks until no job is queued or running (tests, shutdown).

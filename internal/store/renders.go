@@ -64,6 +64,12 @@ func (s *Store) FinishRender(id int64, state, errMsg string, seconds float64) er
 	return err
 }
 
+// SetRenderPaths sets the files of a render (they are named after its ID).
+func (s *Store) SetRenderPaths(id int64, mp4, report, log string) error {
+	_, err := s.db.Exec(`UPDATE renders SET mp4_path=?, report_path=?, log_path=? WHERE id=?`, mp4, report, log, id)
+	return err
+}
+
 // GetRender loads one render.
 func (s *Store) GetRender(id int64) (Render, error) {
 	r, err := scanRender(s.db.QueryRow(`SELECT `+renderCols+` FROM renders WHERE id=?`, id))

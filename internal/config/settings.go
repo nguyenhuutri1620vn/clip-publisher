@@ -30,10 +30,7 @@ func Defaults(home string, lookPath func(string) (string, error)) Settings {
 	code := filepath.Join(home, "Documents", "Code")
 	video := filepath.Join(code, "make-video-free")
 	voice := filepath.Join(code, "make-voice-free")
-	claude := "claude"
-	if p, err := lookPath("claude"); err == nil {
-		claude = p
-	}
+	claude := FindClaude(home, lookPath)
 	return Settings{
 		VideoRepo:    video,
 		VoiceRepo:    voice,
@@ -43,6 +40,29 @@ func Defaults(home string, lookPath func(string) (string, error)) Settings {
 		Workspace:    filepath.Join(home, "ClipPublisher"),
 		DefaultVoice: "narrator_mid",
 	}
+}
+
+// FindClaude locates the Claude Code CLI. An app started from Finder has a minimal PATH (no nvm,
+// no ~/.local/bin), so the usual install folders are probed too. Falls back to bare "claude".
+func FindClaude(home string, lookPath func(string) (string, error)) string {
+	if p, err := lookPath("claude"); err == nil && filepath.IsAbs(p) {
+		return p
+	}
+	candidates := []string{
+		filepath.Join(home, ".local", "bin", "claude"),
+		filepath.Join(home, ".claude", "local", "claude"),
+		"/opt/homebrew/bin/claude",
+		"/usr/local/bin/claude",
+	}
+	nvm, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "*", "bin", "claude"))
+	sort.Sort(sort.Reverse(sort.StringSlice(nvm))) // newest node first (lexical is good enough)
+	candidates = append(candidates, nvm...)
+	for _, c := range candidates {
+		if st, err := os.Stat(c); err == nil && !st.IsDir() && st.Mode()&0o111 != 0 {
+			return c
+		}
+	}
+	return "claude"
 }
 
 // Load overlays the saved non-empty fields on defaults. DefaultMusic may be saved empty on purpose,
@@ -66,7 +86,9 @@ func Load(st *store.Store, defaults Settings) (Settings, error) {
 	pick(&out.VoiceRepo, saved.VoiceRepo)
 	pick(&out.VideoPython, saved.VideoPython)
 	pick(&out.VoiceBin, saved.VoiceBin)
-	pick(&out.ClaudeBin, saved.ClaudeBin)
+	if saved.ClaudeBin != "claude" { // a bare name cannot be resolved under Finder's PATH
+		pick(&out.ClaudeBin, saved.ClaudeBin)
+	}
 	pick(&out.Workspace, saved.Workspace)
 	pick(&out.DefaultVoice, saved.DefaultVoice)
 	out.DefaultMusic = saved.DefaultMusic

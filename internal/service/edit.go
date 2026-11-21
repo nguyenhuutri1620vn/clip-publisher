@@ -32,6 +32,7 @@ func (s *Service) editable(id int64) (store.Video, error) {
 
 // Chat asks Claude to change the current script (PRD F6.2).
 func (s *Service) Chat(videoID int64, message string) error {
+	defer s.lockVideo(videoID)()
 	message = strings.TrimSpace(message)
 	if message == "" {
 		return errors.New("Hãy nhập yêu cầu")
@@ -83,6 +84,7 @@ func (s *Service) saveManual(v store.Video, script []byte, author, summary strin
 
 // EditSlideText changes one slide's title, subtitle and narration (PRD F6.3).
 func (s *Service) EditSlideText(videoID int64, slideID, title, subtitle, narration string) error {
+	defer s.lockVideo(videoID)()
 	v, err := s.editable(videoID)
 	if err != nil {
 		return err
@@ -100,6 +102,7 @@ func (s *Service) EditSlideText(videoID int64, slideID, title, subtitle, narrati
 
 // EditSlideRaw replaces one slide's JSON (PRD F6.3, advanced).
 func (s *Service) EditSlideRaw(videoID int64, slideID, raw string) error {
+	defer s.lockVideo(videoID)()
 	v, err := s.editable(videoID)
 	if err != nil {
 		return err
@@ -117,6 +120,7 @@ func (s *Service) EditSlideRaw(videoID int64, slideID, raw string) error {
 
 // RestoreVersion makes a new version with the content of version n (PRD F6.4).
 func (s *Service) RestoreVersion(videoID int64, n int) error {
+	defer s.lockVideo(videoID)()
 	v, err := s.editable(videoID)
 	if err != nil {
 		return err

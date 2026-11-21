@@ -9,15 +9,16 @@ type Job struct {
 	Kind      string // "script" | "chat" | "render" | "preview"
 	State     string // "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "CANCELED"
 	Error     string
+	PID       int // process group of the running command (0 = none)
 	CreatedAt time.Time
 }
 
-const jobCols = `id, video_id, kind, state, error, created_at`
+const jobCols = `id, video_id, kind, state, error, pid, created_at`
 
 func scanJob(r scanner) (Job, error) {
 	var j Job
 	var created string
-	err := r.Scan(&j.ID, &j.VideoID, &j.Kind, &j.State, &j.Error, &created)
+	err := r.Scan(&j.ID, &j.VideoID, &j.Kind, &j.State, &j.Error, &j.PID, &created)
 	j.CreatedAt = parseTime(created)
 	return j, err
 }
@@ -37,6 +38,12 @@ func (s *Store) AddJob(j *Job) error {
 // SetJobState updates a job's state and error.
 func (s *Store) SetJobState(id int64, state, errMsg string) error {
 	_, err := s.db.Exec(`UPDATE jobs SET state=?, error=? WHERE id=?`, state, errMsg, id)
+	return err
+}
+
+// SetJobPID records the process group of a job's running command.
+func (s *Store) SetJobPID(id int64, pid int) error {
+	_, err := s.db.Exec(`UPDATE jobs SET pid=? WHERE id=?`, pid, id)
 	return err
 }
 

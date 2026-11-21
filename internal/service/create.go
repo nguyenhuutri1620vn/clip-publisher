@@ -90,11 +90,19 @@ func (s *Service) runClaude(videoID int64, kind string, req scriptgen.Request, o
 		_ = s.d.Store.SetJobState(job.ID, "RUNNING", "")
 		s.setProgress(videoID, &ProgressDTO{VideoID: videoID, Kind: kind, StartedAt: time.Now()})
 		defer s.clearProgress(videoID)
-		err := s.claudeJob(ctx, videoID, kind, req)
+		err := s.claudeJob(ctx, videoID, kind, req, s.recordPID(job.ID))
 		switch {
 		case ctx.Err() != nil:
 			_ = s.d.Store.SetJobState(job.ID, "CANCELED", "")
 			_ = s.d.Store.SetStatus(videoID, onCancel, "Đã huỷ: "+stepLabel[kind])
+		case err != nil && kind == "chat":
+			// A failed edit never takes over a working video: keep the current version and say why in the chat.
+			_ = s.d.Store.SetJobState(job.ID, "FAILED", err.Error())
+			_ = s.d.Store.SetStatus(videoID, onCancel, "")
+			if v, gerr := s.d.Store.GetVideo(videoID); gerr == nil {
+				_ = workspace.AppendChat(s.videoDir(v), workspace.ChatMessage{Role: "assistant",
+					Text: "Không sửa được: " + err.Error(), At: time.Now()})
+			}
 		case err != nil:
 			_ = s.d.Store.SetJobState(job.ID, "FAILED", err.Error())
 			_ = s.d.Store.SetStatus(videoID, store.StatusFailed, stepLabel[kind]+": "+err.Error())
@@ -106,7 +114,7 @@ func (s *Service) runClaude(videoID int64, kind string, req scriptgen.Request, o
 	})
 }
 
-func (s *Service) claudeJob(ctx context.Context, videoID int64, kind string, req scriptgen.Request) error {
+func (s *Service) claudeJob(ctx context.Context, videoID int64, kind string, req scriptgen.Request, onStart func(int)) error {
 	v, err := s.d.Store.GetVideo(videoID)
 	if err != nil {
 		return err
@@ -115,6 +123,7 @@ func (s *Service) claudeJob(ctx context.Context, videoID int64, kind string, req
 	if err != nil {
 		return err
 	}
+	gen.OnStart = onStart
 	dir := s.videoDir(v)
 	var warns []string
 	out, err := gen.Generate(ctx, req, func(ctx context.Context, script []byte) ([]string, error) {
@@ -122,7 +131,20 @@ func (s *Service) claudeJob(ctx context.Context, videoID int64, kind string, req
 		warns = w
 		return errs, err
 	})
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	unlock := s.lockVideo(videoID)
+	defer unlock()
+	fresh, gerr := s.d.Store.GetVideo(videoID) // re-read under the lock
+	if gerr != nil {
+		return gerr
+	}
+	v = fresh
 	var inv *scriptgen.InvalidScriptError
+	if errors.As(err, &inv) && inv.Last != nil && kind == "chat" {
+		return errors.New(inv.Error() + ":\n" + strings.Join(inv.Errors, "\n"))
+	}
 	if errors.As(err, &inv) && inv.Last != nil {
 		// Keep Claude's last attempt so the owner can fix it by hand (PRD F3.6).
 		if serr := s.saveVersion(&v, inv.Last.Script, inv.Last.Notes, "claude", inv.Last.Summary, warns); serr != nil {

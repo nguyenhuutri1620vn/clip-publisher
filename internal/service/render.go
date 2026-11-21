@@ -59,6 +59,11 @@ func (s *Service) addLog(id int64, line string) {
 
 // Preview draws the slide PNGs of the current version (PRD F4.3). Status is unchanged.
 func (s *Service) Preview(videoID int64) error {
+	defer s.lockVideo(videoID)()
+	return s.preview(videoID)
+}
+
+func (s *Service) preview(videoID int64) error {
 	v, err := s.editable(videoID)
 	if err != nil {
 		return err
@@ -81,7 +86,9 @@ func (s *Service) Preview(videoID int64) error {
 		_ = s.d.Store.SetJobState(job.ID, "RUNNING", "")
 		start := time.Now()
 		_ = os.MkdirAll(filepath.Dir(out), 0o755)
-		res, err := s.d.Runner.Run(ctx, pipeline.PreviewCmd(s.d.Settings(), ver.ScriptPath, out), nil)
+		cmd := pipeline.PreviewCmd(s.d.Settings(), ver.ScriptPath, out)
+		cmd.OnStart = s.recordPID(job.ID)
+		res, err := s.d.Runner.Run(ctx, cmd, nil)
 		state, msg := "DONE", ""
 		switch {
 		case ctx.Err() != nil:
@@ -102,6 +109,11 @@ func (s *Service) Preview(videoID int64) error {
 
 // Render runs the voice + video pipeline on the current version (PRD F5).
 func (s *Service) Render(videoID int64) error {
+	defer s.lockVideo(videoID)()
+	return s.render(videoID)
+}
+
+func (s *Service) render(videoID int64) error {
 	v, err := s.editable(videoID)
 	if err != nil {
 		return err
@@ -119,10 +131,15 @@ func (s *Service) Render(videoID int64) error {
 	}
 	set := s.d.Settings()
 	dir := s.videoDir(v)
-	r := store.Render{VideoID: videoID, Version: v.CurrentVersion, Kind: "render",
-		MP4Path: workspace.RenderMP4Path(dir, v.CurrentVersion), LogPath: workspace.RenderLogPath(dir, v.CurrentVersion), State: "RUNNING"}
-	r.ReportPath = pipeline.ReportPath(r.MP4Path)
+	r := store.Render{VideoID: videoID, Version: v.CurrentVersion, Kind: "render", State: "RUNNING"}
 	if err := s.d.Store.AddRender(&r); err != nil {
+		return err
+	}
+	// Files are named after the render ID, so a re-render never overwrites an earlier one.
+	r.MP4Path = workspace.RenderMP4Path(dir, v.CurrentVersion, r.ID)
+	r.LogPath = workspace.RenderLogPath(dir, v.CurrentVersion, r.ID)
+	r.ReportPath = pipeline.ReportPath(r.MP4Path)
+	if err := s.d.Store.SetRenderPaths(r.ID, r.MP4Path, r.ReportPath, r.LogPath); err != nil {
 		return err
 	}
 	job := store.Job{VideoID: videoID, Kind: "render", State: "QUEUED"}
@@ -163,6 +180,7 @@ func (s *Service) renderJob(ctx context.Context, videoID int64, title string, r 
 	_ = os.MkdirAll(filepath.Dir(r.LogPath), 0o755)
 	logf, _ := os.OpenFile(r.LogPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	cmd := pipeline.RenderCmd(set, script, voiceDir, r.MP4Path, config.VoiceProfilePath(set, voice), music)
+	cmd.OnStart = s.recordPID(job.ID)
 	res, err := s.d.Runner.Run(ctx, cmd, func(line string) {
 		logMu.Lock()
 		if logf != nil {
@@ -265,6 +283,7 @@ func (s *Service) settleCanceledRender(videoID int64) {
 
 // Retry re-runs the last job of a video (PRD F3.6, F5.4, F5.6).
 func (s *Service) Retry(videoID int64) error {
+	defer s.lockVideo(videoID)()
 	v, err := s.d.Store.GetVideo(videoID)
 	if err != nil {
 		return err
@@ -308,10 +327,10 @@ func (s *Service) Retry(videoID int64) error {
 		s.changed(videoID)
 		return nil
 	case "preview":
-		return s.Preview(videoID)
+		return s.preview(videoID)
 	default:
 		_ = s.d.Store.SetStatus(videoID, store.StatusScriptReview, "")
-		return s.Render(videoID)
+		return s.render(videoID)
 	}
 }
 

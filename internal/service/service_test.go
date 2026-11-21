@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -412,5 +414,130 @@ func TestValidatorWarningsCleaned(t *testing.T) {
 	if strings.Contains(joined, "no --audio") || strings.Contains(joined, ".validate.json") ||
 		!strings.Contains(joined, "script.json › slides[1].subtitle") {
 		t.Fatalf("%q", joined)
+	}
+}
+
+// Review #1: a second render of the same version must not overwrite the first one's files.
+func TestRenderTwiceKeepsEarlierFile(t *testing.T) {
+	e := setup(t)
+	id := e.create(t)
+	e.svc.Render(id)
+	e.svc.WaitIdle()
+	first, _ := e.st.LatestRender(id, "render")
+	t.Setenv("FAKE_MV_EXIT", "5")
+	e.svc.Render(id)
+	e.svc.WaitIdle()
+	second, _ := e.st.LatestRender(id, "render")
+	if first.ID == second.ID || first.MP4Path == second.MP4Path || first.LogPath == second.LogPath {
+		t.Fatalf("paths reused: %+v %+v", first, second)
+	}
+	if b, err := os.ReadFile(first.MP4Path); err != nil || len(b) == 0 {
+		t.Fatalf("first render damaged: %v", err)
+	}
+	if lb, _ := os.ReadFile(first.LogPath); !strings.Contains(string(lb), "history_shorts render") {
+		t.Fatal("first log truncated")
+	}
+}
+
+// Review #2: concurrent clicks must not queue two renders or reuse a version number.
+func TestConcurrentRenderQueuesOnce(t *testing.T) {
+	e := setup(t)
+	id := e.create(t)
+	t.Setenv("FAKE_MV_SLEEP", "1")
+	var wg sync.WaitGroup
+	errs := make([]error, 8)
+	for i := range errs {
+		wg.Add(1)
+		go func(i int) { defer wg.Done(); errs[i] = e.svc.Render(id) }(i)
+	}
+	wg.Wait()
+	ok := 0
+	for _, err := range errs {
+		if err == nil {
+			ok++
+		} else if !errors.Is(err, ErrBusy) {
+			t.Fatalf("unexpected %v", err)
+		}
+	}
+	e.svc.WaitIdle()
+	rs, _ := e.st.ListRenders(id)
+	if ok != 1 || len(rs) != 1 {
+		t.Fatalf("ok=%d renders=%d", ok, len(rs))
+	}
+}
+
+func TestConcurrentEditsDistinctVersions(t *testing.T) {
+	e := setup(t)
+	id := e.create(t)
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			e.svc.EditSlideText(id, "a", "A", "sa", strings.Repeat("x", i+1))
+		}(i)
+	}
+	wg.Wait()
+	vs, _ := e.st.ListVersions(id)
+	if len(vs) != 5 {
+		t.Fatalf("versions %d", len(vs))
+	}
+	seen := map[string]bool{}
+	for _, v := range vs[1:] {
+		b, _ := os.ReadFile(v.ScriptPath)
+		sc := string(b)
+		if seen[sc] {
+			t.Fatalf("version %d content duplicated (file overwritten)", v.N)
+		}
+		seen[sc] = true
+	}
+}
+
+// Review #3: processes left from a crashed run are stopped before Retry can start a new one.
+func TestRecoverKillsOrphanProcess(t *testing.T) {
+	e := setup(t)
+	id := e.create(t)
+	cmd := exec.Command("/bin/sleep", "30")
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { cmd.Wait(); close(done) }()
+	t.Cleanup(func() { cmd.Process.Kill() })
+	e.st.SetStatus(id, store.StatusRendering, "")
+	j := store.Job{VideoID: id, Kind: "render", State: "RUNNING"}
+	e.st.AddJob(&j)
+	e.st.SetJobPID(j.ID, cmd.Process.Pid)
+	e.svc.ownedProcess = func(pid int) bool { return pid == cmd.Process.Pid }
+	if err := e.svc.Recover(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("orphan process still running")
+	}
+}
+
+// Review #6: a chat edit Claude cannot make valid must not replace a working version.
+func TestChatInvalidKeepsCurrent(t *testing.T) {
+	e := setup(t)
+	id := e.create(t)
+	e.svc.Render(id)
+	e.svc.WaitIdle()
+	t.Setenv("FAKE_VALIDATE_OUT", "script.json › slides[0].id: bad")
+	if err := e.svc.Chat(id, "làm hỏng đi"); err != nil {
+		t.Fatal(err)
+	}
+	e.svc.WaitIdle()
+	v, _ := e.st.GetVideo(id)
+	if v.CurrentVersion != 1 || v.Status != store.StatusReady {
+		t.Fatalf("%+v", v)
+	}
+	d, _ := e.svc.Detail(id)
+	last := d.Chat[len(d.Chat)-1]
+	if last.Role != "assistant" || !strings.Contains(last.Text, "Không sửa được") {
+		t.Fatalf("%+v", d.Chat)
 	}
 }

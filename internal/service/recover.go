@@ -15,10 +15,17 @@ import (
 
 const interruptedDetail = "Bị gián đoạn (app đã tắt khi đang chạy)"
 
-// Recover marks jobs left running by a previous run as failed (PRD F5.6).
+// Recover marks jobs left running by a previous run as failed (PRD F5.6) and stops their
+// leftover processes, so a Retry never runs alongside a pipeline from before the crash.
 func (s *Service) Recover() error {
-	if _, err := s.d.Store.MarkInterrupted(); err != nil {
+	jobs, err := s.d.Store.MarkInterrupted()
+	if err != nil {
 		return err
+	}
+	for _, j := range jobs {
+		if j.PID > 0 && s.ownedProcess(j.PID) {
+			killGroup(j.PID)
+		}
 	}
 	vs, err := s.d.Store.ListVideos(true)
 	if err != nil {
@@ -98,6 +105,7 @@ func (s *Service) Hide(videoID int64) error {
 
 // Delete moves an app video's folder to the Trash and forgets it; imports are only hidden (PRD F2.3).
 func (s *Service) Delete(videoID int64) error {
+	defer s.lockVideo(videoID)()
 	v, err := s.d.Store.GetVideo(videoID)
 	if err != nil {
 		return err

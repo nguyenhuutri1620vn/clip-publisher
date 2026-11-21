@@ -36,6 +36,7 @@ type Generator struct {
 	Examples   []string
 	Timeout    time.Duration
 	MaxRepairs int
+	OnStart    func(pgid int) // optional: lets the caller record the running Claude process
 }
 
 // Generate asks Claude, validates, and feeds errors back up to MaxRepairs times.
@@ -74,6 +75,7 @@ func (g *Generator) call(ctx context.Context, prompt string) (*Output, error) {
 		Dir:     os.TempDir(), // neutral cwd: no project CLAUDE.md pulled into the prompt
 		Env:     runner.ChildEnv(os.Environ(), filepath.Dir(g.Settings.ClaudeBin)),
 		Timeout: g.Timeout,
+		OnStart: g.OnStart,
 	}
 	res, err := g.Runner.Run(ctx, c, nil)
 	switch {

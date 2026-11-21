@@ -51,11 +51,15 @@ func ScriptPath(dir string, n int) string {
 	return filepath.Join(dir, fmt.Sprintf("script.v%d.json", n))
 }
 func NotesPath(dir string, n int) string { return filepath.Join(dir, fmt.Sprintf("notes.v%d.json", n)) }
-func RenderMP4Path(dir string, n int) string {
-	return filepath.Join(dir, "renders", fmt.Sprintf("v%d.mp4", n))
+
+// RenderMP4Path is the video of one render; each render has its own file (never overwritten).
+func RenderMP4Path(dir string, n int, renderID int64) string {
+	return filepath.Join(dir, "renders", fmt.Sprintf("v%d-r%d.mp4", n, renderID))
 }
-func RenderLogPath(dir string, n int) string {
-	return filepath.Join(dir, "renders", fmt.Sprintf("render.v%d.log", n))
+
+// RenderLogPath is the log of one render.
+func RenderLogPath(dir string, n int, renderID int64) string {
+	return filepath.Join(dir, "renders", fmt.Sprintf("render.v%d-r%d.log", n, renderID))
 }
 func PreviewMP4Path(dir string, n int) string {
 	return filepath.Join(dir, "renders", fmt.Sprintf("preview.v%d", n), "preview.mp4")

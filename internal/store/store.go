@@ -52,6 +52,16 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec("PRAGMA user_version = 1"); err != nil {
 			return err
 		}
+		v = 1
+	}
+	if v < 2 {
+		// v2: remember the process group of a running job so a crash can be cleaned up.
+		if _, err := s.db.Exec("ALTER TABLE jobs ADD COLUMN pid INTEGER NOT NULL DEFAULT 0"); err != nil {
+			return fmt.Errorf("migrate v2: %w", err)
+		}
+		if _, err := s.db.Exec("PRAGMA user_version = 2"); err != nil {
+			return err
+		}
 	}
 	return nil
 }

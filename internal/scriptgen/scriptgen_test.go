@@ -211,3 +211,17 @@ func TestGenerateTimeout(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+// Review #5: stderr warnings around the JSON envelope must not break parsing.
+func TestParseEnvelopeWithNoise(t *testing.T) {
+	cases := []string{
+		`{"type":"result","is_error":false,"result":"X"}` + "\n(node:123) [DEP0040] DeprecationWarning: The `punycode` module is deprecated.\n",
+		"Warning {weird} config\n" + `{"type":"result","is_error":false,"result":"X"}`,
+	}
+	for _, c := range cases {
+		got, err := ParseEnvelope([]byte(c))
+		if err != nil || got != "X" {
+			t.Fatalf("%q → %q %v", c, got, err)
+		}
+	}
+}

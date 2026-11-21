@@ -22,7 +22,8 @@ type Cmd struct {
 	Dir     string
 	Env     []string // nil = inherit
 	Stdin   string
-	Timeout time.Duration // 0 = none
+	Timeout time.Duration  // 0 = none
+	OnStart func(pgid int) // called once the process (and its group) exists
 }
 
 // Result is the outcome of a command that ran to completion.
@@ -67,6 +68,9 @@ func (ExecRunner) Run(ctx context.Context, c Cmd, onLine func(string)) (Result, 
 	}
 	pw.Close()
 	pgid := cmd.Process.Pid
+	if c.OnStart != nil {
+		c.OnStart(pgid)
+	}
 
 	var out strings.Builder
 	var mu sync.Mutex

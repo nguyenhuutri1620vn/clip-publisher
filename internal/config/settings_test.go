@@ -85,3 +85,26 @@ func TestListVoicesMusic(t *testing.T) {
 		t.Fatal("music path")
 	}
 }
+
+// Review #4: Finder's PATH has no nvm/~/.local, so Defaults must probe the usual install dirs.
+func TestFindClaudeProbesUserDirs(t *testing.T) {
+	home := t.TempDir()
+	bin := filepath.Join(home, ".nvm", "versions", "node", "v23.10.0", "bin")
+	os.MkdirAll(bin, 0o755)
+	os.WriteFile(filepath.Join(bin, "claude"), []byte("#!/bin/sh\n"), 0o755)
+	if got := FindClaude(home, lookFail); got != filepath.Join(bin, "claude") {
+		t.Fatalf("nvm: %q", got)
+	}
+	local := filepath.Join(home, ".local", "bin")
+	os.MkdirAll(local, 0o755)
+	os.WriteFile(filepath.Join(local, "claude"), []byte("#!/bin/sh\n"), 0o755)
+	if got := FindClaude(home, lookFail); got != filepath.Join(local, "claude") {
+		t.Fatalf("local: %q", got)
+	}
+	if got := FindClaude(home, lookOK); got != "/opt/n/bin/claude" {
+		t.Fatalf("lookPath first: %q", got)
+	}
+	if Defaults(home, lookFail).ClaudeBin != filepath.Join(local, "claude") {
+		t.Fatal("Defaults does not use FindClaude")
+	}
+}
