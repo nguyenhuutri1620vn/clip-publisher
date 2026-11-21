@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,9 +43,13 @@ func (a *App) getSettings() config.Settings {
 	return a.settings
 }
 
-// mediaHandler serves /media/* once the service exists.
-func (a *App) mediaHandler() http.Handler {
+// mediaMiddleware serves /media/* (local videos, PNGs, thumbnails) and passes everything else on.
+func (a *App) mediaMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/media/") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if a.svc == nil {
 			http.NotFound(w, r)
 			return

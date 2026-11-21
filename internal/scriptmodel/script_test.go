@@ -137,13 +137,13 @@ func TestParseTimeHint(t *testing.T) {
 
 func TestEstimate(t *testing.T) {
 	got := EstimateNarrationSeconds("một hai ba [pause 400ms] bốn")
-	if math.Abs(got-(4.0/3+0.4)) > 1e-9 {
+	if math.Abs(got-(4.0/4.5+0.4)) > 1e-9 { // 4.5 syllables/s measured on 15 real narrator_mid voices
 		t.Fatalf("got %v", got)
 	}
 }
 
 func TestWarnings(t *testing.T) {
-	long := strings.Repeat("chữ ", 60)
+	long := strings.Repeat("chữ ", 62)
 	s := &Script{Slides: []Slide{{ID: "a", Narration: long}}}
 	w := ScriptWarnings(s)
 	if len(w) == 0 || w[0].SlideID != "a" || !strings.Contains(w[0].Message, "14s") {

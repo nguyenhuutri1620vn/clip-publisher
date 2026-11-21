@@ -20,8 +20,10 @@ func main() {
 		MinWidth:  1024,
 		MinHeight: 680,
 		AssetServer: &assetserver.Options{
-			Assets:  assets,
-			Handler: app.mediaHandler(),
+			Assets: assets,
+			// Middleware (not Handler): in `wails dev` every request is proxied to Vite and Handler
+			// is never consulted, so /media/* must be intercepted before that.
+			Middleware: app.mediaMiddleware,
 		},
 		BackgroundColour: &options.RGBA{R: 22, G: 20, B: 18, A: 1},
 		OnStartup:        app.startup,

@@ -132,7 +132,17 @@ func (s *Service) validate(ctx context.Context, dir string, script []byte) (errs
 	if err != nil {
 		return nil, nil, fmt.Errorf("không chạy được history_shorts validate: %w", err)
 	}
-	errs, warns = pipeline.ParseValidate(res.Output)
+	errs, rawWarns := pipeline.ParseValidate(res.Output)
+	for _, w := range rawWarns {
+		// The app validates without --audio on purpose; that warning is always true and only noise.
+		if strings.Contains(w, "no --audio") {
+			continue
+		}
+		warns = append(warns, strings.ReplaceAll(w, ".validate.json", "script.json"))
+	}
+	for i, e := range errs {
+		errs[i] = strings.ReplaceAll(e, ".validate.json", "script.json")
+	}
 	if res.ExitCode != 0 && len(errs) == 0 {
 		errs = []string{"validate thoát với mã " + fmt.Sprint(res.ExitCode) + ": " + strings.Join(pipeline.Tail(res.Output, 3), " / ")}
 	}

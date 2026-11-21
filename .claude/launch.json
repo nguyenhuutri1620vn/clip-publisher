@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wails-dev",
+      "runtimeExecutable": "wails",
+      "runtimeArgs": ["dev", "-browser=false"],
+      "port": 34115
+    }
+  ]
+}

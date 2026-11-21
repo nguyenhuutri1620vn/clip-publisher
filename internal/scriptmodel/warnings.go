@@ -14,7 +14,7 @@ type Warning struct {
 }
 
 const (
-	syllablesPerSecond = 3.0
+	syllablesPerSecond = 4.5  // measured on real narrator_mid voices
 	voiceRiskSeconds   = 12.5 // make-voice-free rejects > 14 s
 	slidePadding       = 0.8  // theme lead-in 0.3 s + tail 0.5 s
 	minTotal, maxTotal = 15.0, 90.0

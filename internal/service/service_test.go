@@ -397,3 +397,20 @@ func TestDeleteAppVideoTrashesFolder(t *testing.T) {
 		t.Fatal("row not deleted")
 	}
 }
+
+func TestValidatorWarningsCleaned(t *testing.T) {
+	e := setup(t)
+	t.Setenv("FAKE_VALIDATE_OUT", "WARN script.json › slides: narration present but no --audio: slides use auto timing and no voice\n"+
+		"WARN .validate.json › slides[1].subtitle: text auto-shrunk to 42 px")
+	id := e.create(t)
+	d, _ := e.svc.Detail(id)
+	var msgs []string
+	for _, w := range d.Warnings {
+		msgs = append(msgs, w.Message)
+	}
+	joined := strings.Join(msgs, "|")
+	if strings.Contains(joined, "no --audio") || strings.Contains(joined, ".validate.json") ||
+		!strings.Contains(joined, "script.json › slides[1].subtitle") {
+		t.Fatalf("%q", joined)
+	}
+}
