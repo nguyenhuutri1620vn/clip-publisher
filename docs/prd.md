@@ -148,3 +148,5 @@ Bảng SQLite tối thiểu: `videos` (id, slug, title, origin=`app`|`import`, s
 - Ngưỡng cảnh báo lệch thời gian 2 s; Claude sửa lỗi validate tối đa 3 vòng; timeout Claude 5 phút.
 - Thêm nút **Preview khung hình** (F4.3) ở bước duyệt script — rẻ, giúp thấy bố cục trước khi chờ voice.
 - Thông báo macOS khi render xong (F5.4) đưa vào MVP vì rẻ và giải quyết đúng chuyện "chờ".
+- **Lệch so với F5.4**: thông báo gửi qua `osascript` nên bấm vào **không** mở được đúng video (macOS mở Script Editor). Video vừa xong được đưa lên đầu thư viện thay thế. Muốn bấm-để-mở cần app có chữ ký + UNUserNotificationCenter (sau MVP).
+- **Workspace cố định** `~/ClipPublisher` trong MVP (database nằm ở đó); ô Workspace trong Settings chỉ hiển thị.

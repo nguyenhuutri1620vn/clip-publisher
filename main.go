@@ -12,24 +12,26 @@ import (
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
-
-	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "clip-publisher",
-		Width:  1024,
-		Height: 768,
+		Title:     "Clip Publisher",
+		Width:     1320,
+		Height:    860,
+		MinWidth:  1024,
+		MinHeight: 680,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: app.mediaHandler(),
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		BackgroundColour: &options.RGBA{R: 22, G: 20, B: 18, A: 1},
 		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
+		OnBeforeClose:    app.beforeClose,
+		OnShutdown:       app.shutdown,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId: "clip-publisher-6fe7430",
 		},
+		Bind: []interface{}{app},
 	})
-
 	if err != nil {
 		println("Error:", err.Error())
 	}
