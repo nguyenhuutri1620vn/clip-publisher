@@ -1,0 +1,176 @@
+{
+  "audio": {
+    "manifest": "voice/khuc_thua_du_mid2/audio_manifest.json",
+    "manifest_sha256": "8829f61bf122163b4f475b7ae11365ac6aa694be5773ae5095b388f89083dea8",
+    "slides": [
+      {
+        "duration": 4.867,
+        "id": "sau-muoi",
+        "voice_file": "voice/khuc_thua_du_mid2/sau-muoi.wav",
+        "voice_seconds": 4.039
+      },
+      {
+        "duration": 4.933,
+        "id": "chin-tram-nam-muoi",
+        "voice_file": "voice/khuc_thua_du_mid2/chin-tram-nam-muoi.wav",
+        "voice_seconds": 4.124
+      },
+      {
+        "duration": 9.167,
+        "id": "ba-lan",
+        "voice_file": "voice/khuc_thua_du_mid2/ba-lan.wav",
+        "voice_seconds": 8.351
+      },
+      {
+        "duration": 5.333,
+        "id": "khong-phai-ngo-quyen",
+        "voice_file": "voice/khuc_thua_du_mid2/khong-phai-ngo-quyen.wav",
+        "voice_seconds": 4.519
+      },
+      {
+        "duration": 5.3,
+        "id": "khuc-thua-du",
+        "voice_file": "voice/khuc_thua_du_mid2/khuc-thua-du.wav",
+        "voice_seconds": 4.477
+      },
+      {
+        "duration": 8.933,
+        "id": "danh-thuc",
+        "voice_file": "voice/khuc_thua_du_mid2/danh-thuc.wav",
+        "voice_seconds": 8.105
+      },
+      {
+        "duration": 5.267,
+        "id": "duong-dinh-nghe",
+        "voice_file": "voice/khuc_thua_du_mid2/duong-dinh-nghe.wav",
+        "voice_seconds": 4.442
+      },
+      {
+        "duration": 6.767,
+        "id": "ngo-quyen",
+        "voice_file": "voice/khuc_thua_du_mid2/ngo-quyen.wav",
+        "voice_seconds": 5.949
+      },
+      {
+        "duration": 4.233,
+        "id": "khoi-dau",
+        "voice_file": "voice/khuc_thua_du_mid2/khoi-dau.wav",
+        "voice_seconds": 3.433
+      }
+    ]
+  },
+  "music_sha256": "f0f7efab0e317d31f58d5e410c44f885ffe9f632aecd4fd425b929f299a3a812",
+  "script_sha256": "9db054c0a1982f0eed93ce8ebc03ae7315712ddd3e5b4cde21b9a541ef2c7439",
+  "sfx_volume": 0.3,
+  "slides": [
+    {
+      "duration": 4.867,
+      "index": 1,
+      "png": "slides/01.png"
+    },
+    {
+      "duration": 4.933,
+      "index": 2,
+      "png": "slides/02.png"
+    },
+    {
+      "duration": 9.167,
+      "index": 3,
+      "png": "slides/03.png"
+    },
+    {
+      "duration": 5.333,
+      "index": 4,
+      "png": "slides/04.png"
+    },
+    {
+      "duration": 5.3,
+      "index": 5,
+      "png": "slides/05.png"
+    },
+    {
+      "duration": 8.933,
+      "index": 6,
+      "png": "slides/06.png"
+    },
+    {
+      "duration": 5.267,
+      "index": 7,
+      "png": "slides/07.png"
+    },
+    {
+      "duration": 6.767,
+      "index": 8,
+      "png": "slides/08.png"
+    },
+    {
+      "duration": 4.233,
+      "index": 9,
+      "png": "slides/09.png"
+    }
+  ],
+  "sources": [
+    {
+      "text": "Ngô Sĩ Liên và các sử thần triều Lê, Đại Việt sử ký toàn thư, Ngoại kỷ (bản dịch Viện Khoa học Xã hội Việt Nam, NXB Khoa học Xã hội, 1998) [CẦN KIỂM TRA SỐ QUYỂN VÀ TRANG cho các mốc 111 TCN, 40, 43, 544, 602, 905, 931, 938]",
+      "type": null
+    },
+    {
+      "text": "[CẦN BỔ SUNG NGUỒN: nhận định Khúc Thừa Dụ nhận chức Tiết độ sứ để phương Bắc không có cớ can thiệp, còn quyền thực thi do người Việt nắm]",
+      "type": null
+    },
+    {
+      "text": "[CẦN BỔ SUNG NGUỒN: Dương Đình Nghệ là tướng cũ của họ Khúc, năm 931 đánh đuổi quân Nam Hán; Ngô Quyền là con rể Dương Đình Nghệ]",
+      "type": null
+    },
+    {
+      "text": "[CẦN BỔ SUNG NGUỒN: cách tính khoảng 60 năm độc lập (Hai Bà Trưng 40–43, nhà Tiền Lý 544–602) và khoảng 950 năm đô hộ (111 TCN–40, 43–544, 602–905)]",
+      "type": null
+    }
+  ],
+  "synth_sfx": [
+    {
+      "at_ms": 0,
+      "auto": false,
+      "gain_db": -4.0,
+      "slide": "sau-muoi",
+      "sound": "gong"
+    },
+    {
+      "at_ms": 18967,
+      "auto": false,
+      "gain_db": -8.0,
+      "slide": "khong-phai-ngo-quyen",
+      "sound": "whoosh"
+    },
+    {
+      "at_ms": 24600,
+      "auto": false,
+      "gain_db": -4.0,
+      "slide": "khuc-thua-du",
+      "sound": "drum"
+    }
+  ],
+  "theme_sha256": "537d7ebd6a71236f8e98e909d9f69d17aff81da87b41e115524fc8fde4cdacc4",
+  "timings": {
+    "concat": 10.115,
+    "encode": 23.541,
+    "mux": 3.002,
+    "render_slides": 11.31,
+    "total": 48.403,
+    "validate": 0.38
+  },
+  "total_duration": 54.8,
+  "versions": {
+    "Pillow": "13.0.0",
+    "cairo": "1.18.6",
+    "ffmpeg": "8.1",
+    "numpy": "2.4.6",
+    "pycairo": "1.29.2",
+    "python": "3.11.15",
+    "scipy": "1.17.1"
+  },
+  "warnings": [
+    "script.json › slides[3].title: text auto-shrunk to 72 px",
+    "script.json › slides[5].title: text auto-shrunk to 64 px"
+  ]
+}

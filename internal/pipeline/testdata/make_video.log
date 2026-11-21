@@ -1,0 +1,16 @@
+$ /Users/tringuyenhuu/Documents/Code/make-video-free/.venv/bin/python -m history_shorts validate --script examples/co_loa/script.json
+WARN script.json › slides: narration present but no --audio: slides use auto timing and no voice
+0 errors, 1 warnings
+$ /Users/tringuyenhuu/Documents/Code/make-video-free/.venv/bin/python -m history_shorts export-narration --script examples/co_loa/script.json --out /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2
+Wrote 15 narration files and /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/manifest.json
+$ /Users/tringuyenhuu/Documents/Code/make-voice-free/.venv/bin/make-voice-free voice /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/hook.txt /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/hook.wav --voice /Users/tringuyenhuu/Documents/Code/make-voice-free/voices/narrator_mid.json --allow-noncommercial
+/Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/hook.wav: 4.29 s (2/2 chunks cached)
+$ /Users/tringuyenhuu/Documents/Code/make-voice-free/.venv/bin/make-voice-free voice /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/rua-vang.txt /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/rua-vang.wav --voice /Users/tringuyenhuu/Documents/Code/make-voice-free/voices/narrator_mid.json --allow-noncommercial
+/Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/rua-vang.wav: 5.31 s
+$ /Users/tringuyenhuu/Documents/Code/make-voice-free/.venv/bin/make-voice-free voice /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/that-thu.txt /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/that-thu.wav --voice /Users/tringuyenhuu/Documents/Code/make-voice-f
+/Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/that-thu.wav: 3.77 s (2/2 chunks cached)
+$ /Users/tringuyenhuu/Documents/Code/make-video-free/.venv/bin/python -m history_shorts audio-manifest --narration /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2
+Paired 15 voices; wrote /Users/tringuyenhuu/Documents/Code/make-voice-free/voice/co_loa_v2/audio_manifest.json
+$ /Users/tringuyenhuu/Documents/Code/make-video-free/.venv/bin/python -m history_shorts render --script examples/co_loa/script.json --out output/co_loa.mp4 --music /Users/tringuyenhuu/Documents/Code/make-video-free/music/vietnam_lake_reflections.mp3 --music-volume 0.25 --sfx-volume 0.3 --audio /User
+0 errors, 0 warnings
+Slides: 15
