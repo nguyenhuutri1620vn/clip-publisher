@@ -16,7 +16,7 @@ Hợp đồng `script.json` (schema 2.2, layer catalog, giới hạn voice 0.3�
 
 ## Quy tắc cứng
 
-1. **Không sửa, di chuyển hay xoá file trong 2 repo anh em.** Chỉ đọc (examples, voices, music, docs, output) và gọi CLI của chúng. Cần thay đổi bên đó → dừng lại, báo chủ kênh. (C2, phản mục tiêu)
+1. **Không sửa, di chuyển hay xoá file trong 2 repo anh em.** Chỉ đọc (examples, voices, music, docs, final) và gọi CLI của chúng. Ngoại lệ duy nhất: khi chủ kênh bấm **Xoá** một video đã xuất bản, app chuyển đúng thư mục `make-video-free/final/<tên>/` vào Thùng rác (không bao giờ xoá vĩnh viễn, không đụng `output/`). Cần thay đổi khác bên đó → dừng lại, báo chủ kênh. (C2, phản mục tiêu)
 2. **Không chạy lệnh qua shell.** `exec.Command(name, args...)`; `--voice-cmd` là chuỗi template do make_video.py tự tách. (C4)
 3. **Không bao giờ ghi đè phiên bản script hay render cũ.** Ghi file bằng ghi tạm rồi rename.
 4. **Không tự gỡ nhãn `[CẦN KIỂM TRA]`** hay cờ `claim`; không dùng ảnh AI làm bằng chứng lịch sử.

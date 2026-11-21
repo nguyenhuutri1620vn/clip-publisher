@@ -17,7 +17,8 @@ import (
 func (s *Service) summary(v store.Video) VideoSummary {
 	out := VideoSummary{ID: v.ID, Title: v.Title, Status: string(v.Status), StatusDetail: v.StatusDetail,
 		Origin: v.Origin, Editable: v.Editable, UpdatedAt: v.UpdatedAt.Format(time.RFC3339),
-		ThumbURL: media.ThumbURL(v.ID), QueuePos: s.renderQ.Position(renderKey(v.ID))}
+		ThumbURL: media.ThumbURL(v.ID), QueuePos: s.renderQ.Position(renderKey(v.ID)),
+		Location: s.trashTarget(v)}
 	if r, err := s.d.Store.LatestRender(v.ID, "render"); err == nil && r.State == "DONE" {
 		if rep, err := pipeline.ReadReport(r.ReportPath); err == nil {
 			out.Duration = rep.TotalDuration

@@ -9,7 +9,7 @@ import VersionBar from './VersionBar';
 
 type Tab = 'script' | 'chat' | 'versions';
 
-export default function VideoView({id, onGone}: {id: number; onGone: () => void}) {
+export default function VideoView({id, onGone, onDelete}: {id: number; onGone: () => void; onDelete: () => void}) {
   const [d, setD] = useState<VideoDetail | null>(null);
   const [progress, setProgress] = useState<ProgressDTO | null>(null);
   const [log, setLog] = useState<string[]>([]);
@@ -59,20 +59,13 @@ export default function VideoView({id, onGone}: {id: number; onGone: () => void}
         </div>
         <div className="actions">
           {busy && <button onClick={() => act(api.Cancel(id))}>Huỷ</button>}
+          <button className="danger" onClick={onDelete} disabled={busy} title="Chuyển vào Thùng rác (⌘⌫)">Xoá</button>
           <div className="menu">
             <button onClick={() => setMenu(m => !m)} aria-expanded={menu}>Thêm</button>
             {menu && (
               <div className="menu-pop" onMouseLeave={() => setMenu(false)}>
                 <button onClick={() => { setMenu(false); act(api.OpenFolder(id)); }}>Mở thư mục video</button>
                 <button onClick={() => { setMenu(false); act(api.Hide(id)).then(onGone); }}>Ẩn khỏi thư viện</button>
-                {v.origin === 'app' && (
-                  <button className="danger" onClick={() => {
-                    setMenu(false);
-                    if (confirm('Chuyển thư mục video này vào Thùng rác? Có thể khôi phục từ Thùng rác.')) {
-                      act(api.Delete(id)).then(onGone);
-                    }
-                  }}>Xoá (vào Thùng rác)</button>
-                )}
               </div>
             )}
           </div>

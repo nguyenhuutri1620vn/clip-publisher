@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"time"
 
 	"clip-publisher/internal/library"
@@ -176,7 +177,26 @@ func (s *Service) Hide(videoID int64) error {
 	return nil
 }
 
-// Delete moves an app video's folder to the Trash and forgets it; imports are only hidden (PRD F2.3).
+// trashTarget is the folder that deleting v moves to the Trash: the app's folder for videos made
+// in the app, final/<name> for published videos, "" for old draft imports (only forgotten).
+func (s *Service) trashTarget(v store.Video) string {
+	if v.Origin != "import" {
+		return s.videoDir(v)
+	}
+	if v.SourcePath == "" {
+		return ""
+	}
+	dir := filepath.Dir(v.SourcePath)
+	final := library.FinalDir(s.d.Settings().VideoRepo)
+	if filepath.Dir(dir) != final { // only ever a folder directly inside final/
+		return ""
+	}
+	return dir
+}
+
+// Delete moves the video's folder to the Trash (recoverable) and forgets it (PRD F2.3). For a
+// published video that is make-video-free/final/<name>, so the next scan does not bring it back;
+// the app's own copy (scripts, chat) goes to the Trash too. Draft imports are only forgotten.
 func (s *Service) Delete(videoID int64) error {
 	defer s.lockVideo(videoID)()
 	v, err := s.d.Store.GetVideo(videoID)
@@ -186,13 +206,18 @@ func (s *Service) Delete(videoID int64) error {
 	if s.hasActiveJob(videoID) {
 		return ErrBusy
 	}
+	targets := []string{s.trashTarget(v)}
 	if v.Origin == "import" {
-		return s.Hide(videoID)
+		targets = append(targets, s.videoDir(v))
 	}
-	dir := s.videoDir(v)
-	if _, err := os.Stat(dir); err == nil && s.d.Trash != nil {
-		if err := s.d.Trash(dir); err != nil {
-			return err
+	for _, dir := range targets {
+		if dir == "" {
+			continue
+		}
+		if _, err := os.Stat(dir); err == nil && s.d.Trash != nil {
+			if err := s.d.Trash(dir); err != nil {
+				return err
+			}
 		}
 	}
 	if err := s.d.Store.DeleteVideo(videoID); err != nil {

@@ -49,6 +49,7 @@ type VideoSummary struct {
 	UpdatedAt    string  `json:"updatedAt"`
 	ThumbURL     string  `json:"thumbUrl"`
 	QueuePos     int     `json:"queuePos"` // -1 = not queued, 0 = running, n = waiting
+	Location     string  `json:"location"` // folder that "Xoá" moves to the Trash ("" = nothing on disk)
 }
 
 // SlideDTO is one slide card.

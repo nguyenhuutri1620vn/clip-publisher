@@ -539,11 +539,11 @@ func TestImportFinalIdempotent(t *testing.T) {
 	if len(list) != 1 || !list[0].Editable || list[0].Status != "READY" || list[0].Duration != 9 || list[0].Title != "Nỏ thần" {
 		t.Fatalf("%+v", list)
 	}
-	if err := e.svc.Delete(list[0].ID); err != nil {
+	if err := e.svc.Hide(list[0].ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(d, "co_loa.mp4")); err != nil {
-		t.Fatal("delete touched the final file")
+		t.Fatal("hide touched the final file")
 	}
 	if list, _ := e.svc.List(); len(list) != 0 {
 		t.Fatal("import not hidden")
@@ -589,5 +589,52 @@ func TestImportRefreshesScriptOnRepublish(t *testing.T) {
 	e.svc.Import()
 	if vs, _ = e.st.ListVersions(v.ID); len(vs) != 2 {
 		t.Fatalf("unchanged script made a new version: %d", len(vs))
+	}
+}
+
+// Deleting a published video moves its final/<name> folder (and the app's copy) to the Trash,
+// so the next scan does not bring it back.
+func TestDeleteFinalMovesFolderToTrash(t *testing.T) {
+	e := setup(t)
+	d := publishFinal(t, e, "co_loa", validScript)
+	e.svc.Import()
+	list, _ := e.svc.List()
+	v, _ := e.st.GetVideo(list[0].ID)
+	if list[0].Location != d {
+		t.Fatalf("location %q", list[0].Location)
+	}
+	if err := e.svc.Delete(v.ID); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.trashed) != 2 || e.trashed[0] != d || e.trashed[1] != e.ws.VideoDir(v.Slug) {
+		t.Fatalf("trashed %v", e.trashed)
+	}
+	if _, err := e.st.GetVideo(v.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Fatal("row not deleted")
+	}
+	if n, _ := e.svc.Import(); n != 0 {
+		t.Fatalf("deleted final came back: %d", n)
+	}
+}
+
+// An import that is not a final (old draft) is only forgotten; its file is never touched.
+func TestDeleteDraftImportOnlyForgets(t *testing.T) {
+	e := setup(t)
+	src := filepath.Join(e.svc.d.Settings().VideoRepo, "output", "draft.mp4")
+	os.MkdirAll(filepath.Dir(src), 0o755)
+	os.WriteFile(src, []byte("v"), 0o644)
+	draft := store.Video{Slug: "draft", Title: "draft", Origin: "import", Status: store.StatusReady, SourcePath: src}
+	e.st.CreateVideo(&draft)
+	if err := e.svc.Delete(draft.ID); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.trashed) != 0 {
+		t.Fatalf("trashed %v", e.trashed)
+	}
+	if _, err := os.Stat(src); err != nil {
+		t.Fatal("draft file touched")
+	}
+	if _, err := e.st.GetVideo(draft.ID); !errors.Is(err, store.ErrNotFound) {
+		t.Fatal("row not deleted")
 	}
 }

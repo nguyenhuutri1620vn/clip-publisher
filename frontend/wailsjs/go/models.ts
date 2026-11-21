@@ -220,6 +220,7 @@ export namespace service {
 	    updatedAt: string;
 	    thumbUrl: string;
 	    queuePos: number;
+	    location: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new VideoSummary(source);
@@ -237,6 +238,7 @@ export namespace service {
 	        this.updatedAt = source["updatedAt"];
 	        this.thumbUrl = source["thumbUrl"];
 	        this.queuePos = source["queuePos"];
+	        this.location = source["location"];
 	    }
 	}
 	export class VideoDetail {
