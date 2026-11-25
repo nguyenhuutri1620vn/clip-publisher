@@ -26,6 +26,10 @@ export function EditSlideText(arg1, arg2, arg3, arg4, arg5) {
   return window['go']['main']['App']['EditSlideText'](arg1, arg2, arg3, arg4, arg5);
 }
 
+export function FindPhotos(arg1, arg2) {
+  return window['go']['main']['App']['FindPhotos'](arg1, arg2);
+}
+
 export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }
@@ -56,6 +60,10 @@ export function ListVoices() {
 
 export function OpenFolder(arg1) {
   return window['go']['main']['App']['OpenFolder'](arg1);
+}
+
+export function PickPhoto(arg1, arg2, arg3) {
+  return window['go']['main']['App']['PickPhoto'](arg1, arg2, arg3);
 }
 
 export function Preview(arg1) {

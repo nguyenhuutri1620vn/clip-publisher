@@ -29,6 +29,57 @@ export namespace config {
 
 }
 
+export namespace photos {
+	
+	export class Candidate {
+	    title: string;
+	    author: string;
+	    license: string;
+	    licenseUrl: string;
+	    pageUrl: string;
+	    thumbUrl: string;
+	    fullUrl: string;
+	    width: number;
+	    height: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Candidate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.author = source["author"];
+	        this.license = source["license"];
+	        this.licenseUrl = source["licenseUrl"];
+	        this.pageUrl = source["pageUrl"];
+	        this.thumbUrl = source["thumbUrl"];
+	        this.fullUrl = source["fullUrl"];
+	        this.width = source["width"];
+	        this.height = source["height"];
+	    }
+	}
+	export class Ref {
+	    sha256: string;
+	    file: string;
+	    credit: string;
+	    pageUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Ref(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sha256 = source["sha256"];
+	        this.file = source["file"];
+	        this.credit = source["credit"];
+	        this.pageUrl = source["pageUrl"];
+	    }
+	}
+
+}
+
 export namespace pipeline {
 	
 	export class Check {
@@ -155,6 +206,8 @@ export namespace service {
 	    previewUrl: string;
 	    startSec: number;
 	    rawJson: string;
+	    photoQueries: string[];
+	    photos: photos.Ref[];
 	
 	    static createFrom(source: any = {}) {
 	        return new SlideDTO(source);
@@ -175,7 +228,27 @@ export namespace service {
 	        this.previewUrl = source["previewUrl"];
 	        this.startSec = source["startSec"];
 	        this.rawJson = source["rawJson"];
+	        this.photoQueries = source["photoQueries"];
+	        this.photos = this.convertValues(source["photos"], photos.Ref);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class SourceDTO {
 	    text: string;

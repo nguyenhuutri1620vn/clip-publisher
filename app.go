@@ -16,6 +16,7 @@ import (
 	"clip-publisher/internal/config"
 	"clip-publisher/internal/media"
 	"clip-publisher/internal/notify"
+	"clip-publisher/internal/photos"
 	"clip-publisher/internal/pipeline"
 	"clip-publisher/internal/runner"
 	"clip-publisher/internal/service"
@@ -182,6 +183,22 @@ func (a *App) EditSlideRaw(id int64, slideID, raw string) error {
 
 func (a *App) RestoreVersion(id int64, n int) error {
 	return a.call(func() error { return a.svc.RestoreVersion(id, n) })
+}
+
+// FindPhotos searches Wikimedia Commons for a slide's photo (licences checked in internal/photos).
+func (a *App) FindPhotos(id int64, query string) ([]photos.Candidate, error) {
+	var out []photos.Candidate
+	err := a.call(func() error {
+		var e error
+		out, e = a.svc.FindPhotos(id, query)
+		return e
+	})
+	return out, err
+}
+
+// PickPhoto downloads the chosen photo for a slide and cites it in the script.
+func (a *App) PickPhoto(id int64, slideID string, cand photos.Candidate) error {
+	return a.call(func() error { return a.svc.PickPhoto(id, slideID, cand) })
 }
 
 func (a *App) Preview(id int64) error { return a.call(func() error { return a.svc.Preview(id) }) }
