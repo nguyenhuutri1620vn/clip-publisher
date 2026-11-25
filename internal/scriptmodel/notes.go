@@ -8,8 +8,9 @@ import (
 
 // SlideNote is Claude's remark on a slide plus the owner's original "Thời gian".
 type SlideNote struct {
-	Note     string `json:"note"`
-	TimeHint string `json:"time_hint"`
+	Note         string   `json:"note"`
+	TimeHint     string   `json:"time_hint"`
+	PhotoQueries []string `json:"photo_queries,omitempty"`
 }
 
 // Notes are kept next to script.vN.json (never inside it).
