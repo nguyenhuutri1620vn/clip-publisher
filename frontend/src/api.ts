@@ -1,6 +1,6 @@
 import * as App from '../wailsjs/go/main/App';
 import {EventsOn} from '../wailsjs/runtime/runtime';
-import {config, pipeline, service, scriptmodel, workspace} from '../wailsjs/go/models';
+import {config, photos, pipeline, service, scriptmodel, workspace} from '../wailsjs/go/models';
 
 export type VideoSummary = service.VideoSummary;
 export type VideoDetail = service.VideoDetail;
@@ -13,6 +13,8 @@ export type SlideChange = scriptmodel.SlideChange;
 export type ChatMessage = workspace.ChatMessage;
 export type Settings = config.Settings;
 export type Check = pipeline.Check;
+export type Candidate = photos.Candidate;
+export type PhotoRef = photos.Ref;
 
 export const api = App;
 
