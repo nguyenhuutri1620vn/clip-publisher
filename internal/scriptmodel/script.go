@@ -217,15 +217,39 @@ func (s *Script) WithSlideSource(id, credit string) ([]byte, error) {
 		return nil, err
 	}
 	slides := copySlides(s.slides)
-	if _, has := slides[i].vals["source"]; !has {
-		if err := slides[i].set("claim", true); err != nil {
-			return nil, err
-		}
-		if err := slides[i].set("source", idx); err != nil {
-			return nil, err
-		}
+	if err := citeSource(slides[i], idx); err != nil {
+		return nil, err
 	}
 	return s.renderWith(top, slides)
+}
+
+// citeSource makes slide o cite sources[idx] too: a missing source becomes claim + source=idx, an
+// existing integer or array source gains idx (a scene may cite several sources).
+func citeSource(o *object, idx int) error {
+	raw, has := o.vals["source"]
+	if !has || string(raw) == "null" {
+		if err := o.set("claim", true); err != nil {
+			return err
+		}
+		return o.set("source", idx)
+	}
+	var one int
+	if json.Unmarshal(raw, &one) == nil {
+		if one == idx {
+			return nil
+		}
+		return o.set("source", []int{one, idx})
+	}
+	var many []int
+	if err := json.Unmarshal(raw, &many); err != nil {
+		return fmt.Errorf("source của cảnh không hợp lệ: %w", err)
+	}
+	for _, v := range many {
+		if v == idx {
+			return nil
+		}
+	}
+	return o.set("source", append(many, idx))
 }
 
 // WithSlideRaw returns the full script JSON with one slide object replaced by raw.
