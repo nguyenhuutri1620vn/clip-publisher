@@ -12,7 +12,7 @@ Quy tắc làm việc cho Claude Code trong repo này. Đọc file này và `doc
 | make-voice-free | `~/Documents/Code/make-voice-free` | narration `.txt` → `.wav` | `.venv/bin/make-voice-free voice {text} {wav} --voice voices/<profile>.json --allow-noncommercial` (truyền qua `--voice-cmd` của make_video.py) |
 | Claude Code CLI | `claude` trên PATH | văn bản kịch bản → `script.json`, sửa script theo chat | `claude -p …` không tương tác, chỉ trả văn bản; app tự ghi file |
 
-Hợp đồng `script.json` (schema 2.2, layer catalog, giới hạn voice 0.3–14 s / cảnh ≤ 15 s) nằm ở `make-video-free/docs/raw_requirement.md` mục 6 + Phụ lục A. Đó là nguồn sự thật, không chép cứng vào code.
+Hợp đồng `script.json` (schema 2.4, layer catalog, vai nữ ancient_female và vai nam warrior_male, giới hạn voice 0.3–14 s / cảnh ≤ 15 s) nằm ở `make-video-free/docs/raw_requirement.md` mục 6 + Phụ lục A. Đó là nguồn sự thật, không chép cứng vào code.
 
 ## Quy tắc cứng
 

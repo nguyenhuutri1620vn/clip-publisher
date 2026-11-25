@@ -45,13 +45,19 @@ func LoadContract(videoRepo string) (string, error) {
 	return data + "\n\n" + appA, nil
 }
 
-var exampleNames = []string{"hai_ba_trung", "vuong_trieu_nu"}
+// examplePaths are the scripts shown to Claude, relative to make-video-free. The last one is the
+// warrior-kit fixture: no example video uses the male roles yet, so it shows their syntax.
+var examplePaths = []string{
+	filepath.Join("examples", "hai_ba_trung", "script.json"),
+	filepath.Join("examples", "vuong_trieu_nu", "script.json"),
+	filepath.Join("tests", "data", "warrior_script.json"),
+}
 
-// LoadExamples returns up to two example scripts from make-video-free/examples.
+// LoadExamples returns the example scripts that exist in make-video-free.
 func LoadExamples(videoRepo string) ([]string, error) {
 	var out []string
-	for _, n := range exampleNames {
-		b, err := os.ReadFile(filepath.Join(videoRepo, "examples", n, "script.json"))
+	for _, p := range examplePaths {
+		b, err := os.ReadFile(filepath.Join(videoRepo, p))
 		if err == nil {
 			out = append(out, string(b))
 		}

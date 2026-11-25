@@ -29,7 +29,10 @@ Reply with ONE JSON object and nothing else (no prose, no code fences):
 {"script": <the complete script.json>, "notes": {"slides": {"<slide id>": {"note": "...", "time_hint": "..."}}}, "summary": "<one short Vietnamese sentence describing what you did or changed>"}
 
 Rules:
-- "schema_version": "2.2". Follow the CONTRACT exactly; use only layer types, templates and fields it defines.
+- "schema_version": "2.4". Follow the CONTRACT exactly; use only layer types, templates, roles and fields it defines.
+- Characters: match each person's sex. Women use the ancient_female roles (leader, general, general_alt, boat_crew).
+  Men use the warrior_male roles: viet_general / viet_soldier for Vietnamese men, northern_general / northern_soldier
+  for northern (Chinese) invaders. Never draw a man with a female role. Each kit accepts only its own props.
 - "Chữ trên hình" -> slide "title" (short) and "subtitle"; "Lời đọc" -> "narration" (Vietnamese, max 600 chars).
 - "Hình ảnh" -> the closest "scene" built from the CONTRACT's templates/layers, plus a fitting "motion" and "transition".
 - "Thời gian" goes ONLY into notes.slides.<id>.time_hint (verbatim, e.g. "0:04 – 0:12"); never into the script. Slide length comes from the voice.

@@ -66,11 +66,18 @@ func TestLoadExamples(t *testing.T) {
 	if err != nil || len(ex) != 1 || ex[0] != `{"x":1}` {
 		t.Fatalf("%v %v", ex, err)
 	}
+	os.MkdirAll(filepath.Join(repo, "tests", "data"), 0o755)
+	os.WriteFile(filepath.Join(repo, "tests", "data", "warrior_script.json"), []byte(`{"role":"viet_general"}`), 0o644)
+	ex, err = LoadExamples(repo)
+	if err != nil || len(ex) != 2 || ex[1] != `{"role":"viet_general"}` {
+		t.Fatalf("male-role example not loaded: %v %v", ex, err)
+	}
 }
 
 func TestBuildPromptSections(t *testing.T) {
 	p := BuildPrompt("CONTRACT", []string{"EX1"}, Request{Input: "CẢNH 1\nLời đọc: xin chào"})
-	for _, want := range []string{"CONTRACT", "EX1", "INPUT", "CẢNH 1", "[CẦN KIỂM TRA", "\"script\"", "time_hint", "2.2"} {
+	for _, want := range []string{"CONTRACT", "EX1", "INPUT", "CẢNH 1", "[CẦN KIỂM TRA", "\"script\"", "time_hint", `"2.4"`,
+		"viet_general", "northern_soldier", "leader"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("new prompt lacks %q", want)
 		}
