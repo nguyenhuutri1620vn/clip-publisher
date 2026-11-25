@@ -186,3 +186,30 @@ func TestDiff(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestWithSlideSourceAddsCreditOnce(t *testing.T) {
+	s, _ := load(t)
+	credit := "Ảnh: Tác giả X, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:A.jpg"
+	out, err := s.WithSlideSource("hook", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s2, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s2.Sources) != len(s.Sources)+1 || s2.Sources[len(s2.Sources)-1] != credit {
+		t.Fatalf("sources: want credit appended, got %q", s2.Sources)
+	}
+	if !s2.Slides[0].Claim {
+		t.Fatalf("slide hook: want claim true")
+	}
+	out2, err := s2.WithSlideSource("hook", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s3, _ := Parse(out2)
+	if len(s3.Sources) != len(s2.Sources) {
+		t.Fatalf("duplicate credit added: %q", s3.Sources)
+	}
+}
