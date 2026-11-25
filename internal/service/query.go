@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"clip-publisher/internal/media"
+	"clip-publisher/internal/photos"
 	"clip-publisher/internal/pipeline"
 	"clip-publisher/internal/scriptmodel"
 	"clip-publisher/internal/store"
@@ -101,6 +102,7 @@ func (s *Service) Detail(videoID int64) (VideoDetail, error) {
 		}
 	}
 	previewDir := filepath.Dir(workspace.PreviewMP4Path(dir, v.CurrentVersion))
+	chosen, _ := photos.Index(dir)
 	for i, sl := range sc.Slides {
 		n := notes.Slides[sl.ID]
 		dto := SlideDTO{ID: sl.ID, Title: sl.Title, Subtitle: sl.Subtitle, Narration: sl.Narration,
@@ -112,6 +114,8 @@ func (s *Service) Detail(videoID int64) (VideoDetail, error) {
 			rel, _ := filepath.Rel(dir, png)
 			dto.PreviewURL = media.FileURL(videoID, filepath.ToSlash(rel))
 		}
+		dto.PhotoQueries = n.PhotoQueries
+		dto.Photos = chosen[sl.ID]
 		if i < len(starts) {
 			dto.StartSec = starts[i]
 		}
