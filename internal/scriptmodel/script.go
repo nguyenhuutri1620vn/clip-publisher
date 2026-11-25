@@ -121,6 +121,11 @@ func (s *Script) index(id string) (int, error) {
 }
 
 func (s *Script) render(slides []*object) ([]byte, error) {
+	return s.renderWith(s.top, slides)
+}
+
+// renderWith serialises base with its "slides" replaced by slides.
+func (s *Script) renderWith(base *object, slides []*object) ([]byte, error) {
 	list := make([]json.RawMessage, len(slides))
 	for i, o := range slides {
 		b, err := o.MarshalJSON()
@@ -129,10 +134,7 @@ func (s *Script) render(slides []*object) ([]byte, error) {
 		}
 		list[i] = b
 	}
-	top := &object{keys: s.top.keys, vals: map[string]json.RawMessage{}}
-	for k, v := range s.top.vals {
-		top.vals[k] = v
-	}
+	top := copyObject(base)
 	if err := top.set("slides", list); err != nil {
 		return nil, err
 	}
@@ -172,6 +174,82 @@ func (s *Script) WithSlideText(id, title, subtitle, narration string) ([]byte, e
 		}
 	}
 	return s.render(slides)
+}
+
+func copyObject(o *object) *object {
+	c := &object{keys: append([]string(nil), o.keys...), vals: map[string]json.RawMessage{}}
+	for k, v := range o.vals {
+		c.vals[k] = v
+	}
+	return c
+}
+
+// WithSlideSource appends credit to the top-level sources (once) and, if the slide has no
+// source yet, marks it as a claim citing that entry. Existing sources and other slides are kept.
+func (s *Script) WithSlideSource(id, credit string) ([]byte, error) {
+	i, err := s.index(id)
+	if err != nil {
+		return nil, err
+	}
+	var items []json.RawMessage
+	if raw, ok := s.top.vals["sources"]; ok {
+		if err := json.Unmarshal(raw, &items); err != nil {
+			return nil, fmt.Errorf("sources: %w", err)
+		}
+	}
+	idx := -1
+	for k, src := range s.Sources {
+		if src == credit {
+			idx = k
+			break
+		}
+	}
+	if idx < 0 {
+		b, err := json.Marshal(credit)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, b)
+		idx = len(items) - 1
+	}
+	top := copyObject(s.top)
+	if err := top.set("sources", items); err != nil {
+		return nil, err
+	}
+	slides := copySlides(s.slides)
+	if err := citeSource(slides[i], idx); err != nil {
+		return nil, err
+	}
+	return s.renderWith(top, slides)
+}
+
+// citeSource makes slide o cite sources[idx] too: a missing source becomes claim + source=idx, an
+// existing integer or array source gains idx (a scene may cite several sources).
+func citeSource(o *object, idx int) error {
+	raw, has := o.vals["source"]
+	if !has || string(raw) == "null" {
+		if err := o.set("claim", true); err != nil {
+			return err
+		}
+		return o.set("source", idx)
+	}
+	var one int
+	if json.Unmarshal(raw, &one) == nil {
+		if one == idx {
+			return nil
+		}
+		return o.set("source", []int{one, idx})
+	}
+	var many []int
+	if err := json.Unmarshal(raw, &many); err != nil {
+		return fmt.Errorf("source của cảnh không hợp lệ: %w", err)
+	}
+	for _, v := range many {
+		if v == idx {
+			return nil
+		}
+	}
+	return o.set("source", append(many, idx))
 }
 
 // WithSlideRaw returns the full script JSON with one slide object replaced by raw.

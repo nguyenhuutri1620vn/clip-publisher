@@ -1,5 +1,5 @@
 import {Fragment, useState} from 'react';
-import {api, errText, fmtDuration, SlideDTO, VideoDetail} from '../api';
+import {api, Candidate, errText, fmtDuration, SlideDTO, VideoDetail} from '../api';
 
 type Props = {
   d: VideoDetail;
@@ -76,6 +76,29 @@ function SlideCard({index, s, videoId, busy, warnings, current, onSeek}: CardPro
   const [json, setJson] = useState(s.rawJson);
   const [err, setErr] = useState('');
   const [saving, setSaving] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [photoQ, setPhotoQ] = useState((s.photoQueries ?? [])[0] ?? '');
+  const [cands, setCands] = useState<Candidate[] | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoErr, setPhotoErr] = useState('');
+
+  const find = () => {
+    const q = photoQ.trim();
+    if (!q) { setPhotoErr('Hãy nhập từ khóa'); return; }
+    setPhotoBusy(true); setPhotoErr('');
+    api.FindPhotos(videoId, q)
+      .then(setCands)
+      .catch(e => { setCands(null); setPhotoErr(errText(e)); })
+      .finally(() => setPhotoBusy(false));
+  };
+  const pick = (c: Candidate) => {
+    setPhotoBusy(true); setPhotoErr('');
+    // Success also emits video:changed, which reloads the card with the new version and credit.
+    api.PickPhoto(videoId, s.id, c)
+      .then(() => { setPhotoOpen(false); setCands(null); })
+      .catch(e => setPhotoErr(errText(e)))
+      .finally(() => setPhotoBusy(false));
+  };
 
   const open = () => {
     setTitle(s.title); setSubtitle(s.subtitle); setNarration(s.narration);
@@ -120,6 +143,36 @@ function SlideCard({index, s, videoId, busy, warnings, current, onSeek}: CardPro
         )}
         {s.note && <div className="note"><Marked text={s.note}/></div>}
         {warnings.map((w, i) => <div key={i} className="note warn">{w}</div>)}
+        {photoOpen && (
+          <div className="photo-panel">
+            <div className="photo-search">
+              <input type="text" value={photoQ} onChange={e => setPhotoQ(e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') find(); }} aria-label="Từ khóa tìm ảnh"/>
+              <button disabled={photoBusy} onClick={find}>{photoBusy && !cands ? 'Đang tìm…' : 'Tìm'}</button>
+            </div>
+            {(s.photoQueries ?? []).length > 0 && (
+              <div className="photo-hints small dim">
+                Gợi ý: {(s.photoQueries ?? []).map(q => <button key={q} className="link" onClick={() => setPhotoQ(q)}>{q}</button>)}
+              </div>
+            )}
+            {photoErr && <div className="banner error">{photoErr}</div>}
+            {cands && cands.length === 0 && (
+              <div className="dim small">Không tìm thấy ảnh cho “{photoQ}”. Thử từ khóa khác.</div>
+            )}
+            {cands && cands.length > 0 && (
+              <div className="photo-grid">
+                {cands.map(c => (
+                  <figure key={c.pageUrl} className="photo-card">
+                    <img src={c.thumbUrl} alt={c.title}/>
+                    <figcaption className="small">{c.author || 'không rõ tác giả'} · {c.license}</figcaption>
+                    <button disabled={photoBusy} onClick={() => pick(c)}>Chọn</button>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {(s.photos ?? []).map(p => <div key={p.sha256} className="slide-credit small dim">{p.credit}</div>)}
         <div className="slide-meta">
           {s.sceneSummary && <span>Hình: {s.sceneSummary}</span>}
           {s.timeHint && <span>Kịch bản: {s.timeHint}</span>}
@@ -128,6 +181,7 @@ function SlideCard({index, s, videoId, busy, warnings, current, onSeek}: CardPro
           {s.startSec > 0 || index === 1 ? (
             <button className="link" onClick={() => onSeek(s.startSec)}>Xem cảnh này</button>
           ) : null}
+          {!editing && <button className="link" disabled={busy} onClick={() => setPhotoOpen(o => !o)}>Tìm ảnh</button>}
           {!editing && <button className="link" disabled={busy} onClick={open}>Sửa</button>}
         </div>
       </div>

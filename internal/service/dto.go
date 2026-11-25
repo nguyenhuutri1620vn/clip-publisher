@@ -3,6 +3,7 @@ package service
 import (
 	"time"
 
+	"clip-publisher/internal/photos"
 	"clip-publisher/internal/pipeline"
 	"clip-publisher/internal/scriptmodel"
 	"clip-publisher/internal/workspace"
@@ -54,19 +55,21 @@ type VideoSummary struct {
 
 // SlideDTO is one slide card.
 type SlideDTO struct {
-	ID           string  `json:"id"`
-	Title        string  `json:"title"`
-	Subtitle     string  `json:"subtitle"`
-	Narration    string  `json:"narration"`
-	SceneSummary string  `json:"sceneSummary"`
-	Note         string  `json:"note"`
-	TimeHint     string  `json:"timeHint"`
-	Claim        bool    `json:"claim"`
-	NeedsCheck   bool    `json:"needsCheck"`
-	EstSeconds   float64 `json:"estSeconds"`
-	PreviewURL   string  `json:"previewUrl"`
-	StartSec     float64 `json:"startSec"`
-	RawJSON      string  `json:"rawJson"`
+	ID           string       `json:"id"`
+	Title        string       `json:"title"`
+	Subtitle     string       `json:"subtitle"`
+	Narration    string       `json:"narration"`
+	SceneSummary string       `json:"sceneSummary"`
+	Note         string       `json:"note"`
+	TimeHint     string       `json:"timeHint"`
+	Claim        bool         `json:"claim"`
+	NeedsCheck   bool         `json:"needsCheck"`
+	EstSeconds   float64      `json:"estSeconds"`
+	PreviewURL   string       `json:"previewUrl"`
+	StartSec     float64      `json:"startSec"`
+	RawJSON      string       `json:"rawJson"`
+	PhotoQueries []string     `json:"photoQueries"`
+	Photos       []photos.Ref `json:"photos"`
 }
 
 // VersionDTO is one script version.

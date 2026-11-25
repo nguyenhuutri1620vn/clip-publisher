@@ -40,6 +40,7 @@ Rules:
   Never remove an existing "[CẦN KIỂM TRA" marker or "claim" flag.
 - When "Hình ảnh" asks for something the renderer cannot draw (a real photo, a specific artifact, a person's likeness),
   use the closest layers and say so in notes.slides.<id>.note, including the words "cần ảnh thật" when a real photo is wanted.
+- When a slide needs a real photo, also give notes.slides.<id>.photo_queries: 1–3 short English search terms for Wikimedia Commons that match the narration.
 - Write notes and summary in Vietnamese.`
 
 const editRules = `You are editing CURRENT SCRIPT. Apply the INSTRUCTION; keep every slide the instruction does not concern

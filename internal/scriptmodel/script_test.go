@@ -186,3 +186,76 @@ func TestDiff(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestWithSlideSourceAddsCreditOnce(t *testing.T) {
+	s, _ := load(t)
+	credit := "Ảnh: Tác giả X, CC BY-SA 4.0, https://commons.wikimedia.org/wiki/File:A.jpg"
+	out, err := s.WithSlideSource("hook", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s2, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s2.Sources) != len(s.Sources)+1 || s2.Sources[len(s2.Sources)-1] != credit {
+		t.Fatalf("sources: want credit appended, got %q", s2.Sources)
+	}
+	if !s2.Slides[0].Claim {
+		t.Fatalf("slide hook: want claim true")
+	}
+	out2, err := s2.WithSlideSource("hook", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s3, _ := Parse(out2)
+	if len(s3.Sources) != len(s2.Sources) {
+		t.Fatalf("duplicate credit added: %q", s3.Sources)
+	}
+}
+
+func TestWithSlideSourceKeepsExistingCitation(t *testing.T) {
+	src := []byte(`{"schema_version":"2.2","sources":["Sách cũ"],"slides":[{"id":"a","title":"A","narration":"x","claim":true,"source":0}]}`)
+	s, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	credit := "Ảnh: X, CC BY 4.0, https://c.example/F"
+	out, err := s.WithSlideSource("a", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := sourceIndices(t, out); !reflect.DeepEqual(got, []int{0, 1}) {
+		t.Fatalf("source = %v, want [0 1] so the scene cites the photo too", got)
+	}
+	s2, _ := Parse(out)
+	out2, err := s2.WithSlideSource("a", credit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := sourceIndices(t, out2); !reflect.DeepEqual(got, []int{0, 1}) {
+		t.Fatalf("repeat pick changed source to %v", got)
+	}
+}
+
+// sourceIndices returns slide "a"'s source as a list, whether it was written as an int or an array.
+func sourceIndices(t *testing.T, script []byte) []int {
+	t.Helper()
+	var doc struct {
+		Slides []struct {
+			Source json.RawMessage `json:"source"`
+		} `json:"slides"`
+	}
+	if err := json.Unmarshal(script, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var many []int
+	if err := json.Unmarshal(doc.Slides[0].Source, &many); err == nil {
+		return many
+	}
+	var one int
+	if err := json.Unmarshal(doc.Slides[0].Source, &one); err != nil {
+		t.Fatal(err)
+	}
+	return []int{one}
+}

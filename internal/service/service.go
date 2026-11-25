@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"clip-publisher/internal/config"
 	"clip-publisher/internal/jobs"
+	"clip-publisher/internal/photos"
 	"clip-publisher/internal/pipeline"
 	"clip-publisher/internal/runner"
 	"clip-publisher/internal/scriptmodel"
@@ -34,6 +36,7 @@ type Deps struct {
 	Emit          func(event string, data any)
 	Notify        func(title, body string)
 	Trash         func(path string) error
+	Photos        *photos.Client // Wikimedia Commons; nil = default client
 }
 
 // Service is the orchestrator.
@@ -60,6 +63,9 @@ const (
 func New(d Deps) *Service {
 	if d.ClaudeTimeout == 0 {
 		d.ClaudeTimeout = claudeTimeoutDefault
+	}
+	if d.Photos == nil {
+		d.Photos = &photos.Client{HTTP: &http.Client{Timeout: photoTimeout}}
 	}
 	if d.Emit == nil {
 		d.Emit = func(string, any) {}
